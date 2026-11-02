@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Registro from './pages/Registro'
 import Subastas from './pages/Subastas'
 import NotFound from './pages/NotFound'
+import PublicRoute from './components/PublicRoute'
 
 const App = () => {
   return (
@@ -16,13 +17,15 @@ const App = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Contenedor />}>
+          <Route element={<PublicRoute />}>
             <Route path="/" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
-            <Route path="/subastas" element={<ProtectedRoute />}>
-              <Route path="" element={<Subastas />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
           </Route>
+          <Route path="/subastas" element={<ProtectedRoute />}>
+            <Route path="" element={<Subastas />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Route>
         </Routes>
       </BrowserRouter>
     </Provider>
