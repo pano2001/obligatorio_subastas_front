@@ -9,6 +9,7 @@ import Registro from './pages/Registro'
 import Subastas from './pages/Subastas'
 import NotFound from './pages/NotFound'
 import PublicRoute from './components/PublicRoute'
+import NuevaSubasta from './pages/NuevaSubasta'
 
 const App = () => {
   return (
@@ -23,6 +24,7 @@ const App = () => {
           </Route>
           <Route path="/subastas" element={<ProtectedRoute />}>
             <Route path="" element={<Subastas />} />
+            <Route path="nueva" element={<NuevaSubasta />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>
