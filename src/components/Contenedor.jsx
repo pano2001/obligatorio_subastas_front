@@ -19,9 +19,12 @@ const Contenedor = () => {
       <header className="main-header">
         <div className="header-content">
           <Link to="/" className="app-logo">🚗<span>Subastas</span></Link>
-          {usuario && (
-            <div>
+            {usuario && (
+            <div className="usuario-header">
               <span>{usuario.nombre}</span>
+              <span className="badge-plan"> {usuario.plan}</span>
+              <Link to="/account">Mi cuenta</Link>
+              <Link to="/subastas">Mis subastas</Link>
               <button className="logout-btn" onClick={salir} title="Cerrar sesión">Salir</button>
             </div>
           )}
@@ -33,3 +36,4 @@ const Contenedor = () => {
 }
 
 export default Contenedor;
+

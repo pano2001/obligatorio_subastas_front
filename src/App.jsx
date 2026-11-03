@@ -10,6 +10,7 @@ import Subastas from './pages/Subastas'
 import NotFound from './pages/NotFound'
 import PublicRoute from './components/PublicRoute'
 import NuevaSubasta from './pages/NuevaSubasta'
+import Account from './pages/Account'
 
 const App = () => {
   return (
@@ -18,16 +19,17 @@ const App = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Contenedor />}>
-          <Route element={<PublicRoute />}>
-            <Route path="/" element={<Login />} />
-            <Route path="/registro" element={<Registro />} />
+            <Route element={<PublicRoute />}>
+              <Route path="/" element={<Login />} />
+              <Route path="/registro" element={<Registro />} />
+            </Route>
+            <Route element={<ProtectedRoute />}>
+              <Route path="/subastas" element={<Subastas />} />
+              <Route path="/subastas/nueva" element={<NuevaSubasta />} />
+              <Route path="/account" element={<Account />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
           </Route>
-          <Route path="/subastas" element={<ProtectedRoute />}>
-            <Route path="" element={<Subastas />} />
-            <Route path="nueva" element={<NuevaSubasta />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Route>
         </Routes>
       </BrowserRouter>
     </Provider>

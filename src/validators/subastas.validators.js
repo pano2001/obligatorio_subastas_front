@@ -43,3 +43,19 @@ export const crearSubastaSchema = Joi.object({
         'date.greater': 'La fecha de fin debe ser posterior a ahora'
     })
 });
+
+export const editarSubastaSchema = Joi.object({
+    titulo: Joi.string().min(5).max(80).required().messages({
+        'string.empty': 'El título es obligatorio',
+        'string.min': 'El título debe tener al menos {#limit} caracteres',
+        'string.max': 'El título no puede tener más de {#limit} caracteres'
+    }),
+    descripcion: Joi.string().min(10).max(1000).required().messages({
+        'string.empty': 'La descripción es obligatoria',
+        'string.min': 'La descripción debe tener al menos {#limit} caracteres'
+    }),
+    incrementoMinimo: Joi.number().positive().required().messages({
+        'number.base': 'El incremento mínimo debe ser un número',
+        'number.positive': 'El incremento mínimo debe ser mayor a 0'
+    })
+});

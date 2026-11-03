@@ -8,6 +8,7 @@ import api from "../config/api.config"
 import { crearSubastaSchema } from "../validators/subastas.validators"
 import { agregarSubasta } from "../features/subastas.slice"
 
+
 const LIMITE_PLAN_PLUS = 4;
 
 const NuevaSubasta = () => {
@@ -32,7 +33,7 @@ const NuevaSubasta = () => {
         mode: "onChange",
         resolver: joiResolver(crearSubastaSchema),
         defaultValues: {
-            incrementomMinimo: 50
+            incrementoMinimo: 50
         }
     })
 
@@ -138,7 +139,7 @@ const NuevaSubasta = () => {
                 </div>
 
                 {errorApi && <p className="error">{errorApi}</p>}
-
+                <pre>{Object.keys(errors).join(", ")}</pre>
                 <button type="submit" disabled={!isValid || loading}>
                     {loading ? "Publicando..." : "Publicar subasta"}
                 </button>
