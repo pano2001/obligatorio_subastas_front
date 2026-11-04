@@ -36,7 +36,7 @@ const Login = () => {
                     token: response.data.token
                 }));
                 toast.success("Bienvenido " + response.data.usuario.nombre);
-                navigate("/subastas");
+                navigate("/");
             })
             .catch((error) => {
                 setErrorApi(error.response?.data?.message || "No se pudo conectar con el servidor");

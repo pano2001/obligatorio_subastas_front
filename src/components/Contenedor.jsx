@@ -19,15 +19,24 @@ const Contenedor = () => {
       <header className="main-header">
         <div className="header-content">
           <Link to="/" className="app-logo">🚗<span>Subastas</span></Link>
-            {usuario && (
-            <div className="usuario-header">
-              <span>{usuario.nombre}</span>
-              <span className="badge-plan"> {usuario.plan}</span>
-              <Link to="/account">Mi cuenta</Link>
-              <Link to="/subastas">Mis subastas</Link>
-              <button className="logout-btn" onClick={salir} title="Cerrar sesión">Salir</button>
-            </div>
-          )}
+
+          <nav>
+            <Link to="/">Explorar</Link>
+            {usuario ? (
+              <>
+                <Link to="/subastas">Mis subastas</Link>
+                <Link to="/account">Mi cuenta</Link>
+                <span>{usuario.nombre}</span>
+                <span className="badge-plan">{usuario.plan}</span>
+                <button className="logout-btn" onClick={salir} title="Cerrar sesión">Salir</button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">Ingresar</Link>
+                <Link to="/registro">Crear cuenta</Link>
+              </>
+            )}
+          </nav>
         </div>
       </header>
       <Outlet />

@@ -59,3 +59,10 @@ export const editarSubastaSchema = Joi.object({
         'number.positive': 'El incremento mínimo debe ser mayor a 0'
     })
 });
+
+export const crearPujaSchema = (montoMinimo) => Joi.object({
+    monto: Joi.number().min(montoMinimo).required().messages({
+        'number.base': 'El monto debe ser un número',
+        'number.min': `El monto mínimo para pujar es ${montoMinimo}`
+    })
+});

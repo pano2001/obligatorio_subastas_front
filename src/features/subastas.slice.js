@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     subastas: [],
+    publicas: [],
 }
 
 const subastasSlice = createSlice({
@@ -23,8 +24,11 @@ const subastasSlice = createSlice({
                 state.subastas[indice] = action.payload;
             }
         },
+        guardarPublicas: (state, action) => {
+            state.publicas = action.payload;
+        },
     }
 });
 
-export const { guardarSubastas, agregarSubasta, quitarSubasta, reemplazarSubasta } = subastasSlice.actions;
+export const { guardarSubastas, agregarSubasta, quitarSubasta, reemplazarSubasta, guardarPublicas } = subastasSlice.actions;
 export default subastasSlice.reducer;

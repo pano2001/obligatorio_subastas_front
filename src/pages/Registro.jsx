@@ -92,7 +92,7 @@ const Registro = () => {
             </form>
 
             <p className="login-link">
-                ¿Ya tienes cuenta? <Link to="/">Ingresa aquí</Link>
+                ¿Ya tienes cuenta? <Link to="/login">Ingresa aquí</Link>
             </p>
         </div>
     )

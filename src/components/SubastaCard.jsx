@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import api from "../config/api.config"
 import { editarSubastaSchema } from "../validators/subastas.validators"
 import { quitarSubasta, reemplazarSubasta } from "../features/subastas.slice"
+import ImagenesSubasta from "./ImagenesSubasta"
 
 import React from 'react'
 
@@ -94,6 +95,8 @@ const SubastaCard = ({subasta}) => {
                         <span className="error">{errors.incrementoMinimo?.message}</span>
                     </div>
 
+                    <ImagenesSubasta subasta={subasta} />
+
                     <button type="submit" disabled={!isValid || loading}>
                         {loading ? "Guardando..." : "Guardar"}
                     </button>
@@ -107,6 +110,15 @@ const SubastaCard = ({subasta}) => {
   return (
         <div className="card-subasta">
             <h3>{subasta.titulo}</h3>
+
+            {subasta.imagenes.length > 0 && (
+                <div className="galeria">
+                    {subasta.imagenes.map((url) => (
+                        <img src={url} alt={subasta.titulo} width="120" key={url} />
+                    ))}
+                </div>
+            )}
+
             <p>{subasta.vehiculo.marca} {subasta.vehiculo.modelo} ({subasta.vehiculo.anio})</p>
             <p>{subasta.descripcion}</p>
             <p>Precio actual: ${subasta.precioActual}</p>

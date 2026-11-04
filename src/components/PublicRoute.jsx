@@ -6,7 +6,7 @@ const PublicRoute = () => {
     const token = useSelector((state) => state.auth.token);
 
     return (
-        token ? <Navigate to="/subastas" /> : <Outlet />
+        token ? <Navigate to="/" /> : <Outlet />
     )
 }
 
