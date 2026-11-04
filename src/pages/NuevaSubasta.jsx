@@ -17,6 +17,8 @@ const NuevaSubasta = () => {
     const [loading, setLoading] = useState(false);
     const [errorApi, setErrorApi] = useState("");
     const [imagenes, setImagenes] = useState([]);
+    const [sugiriendo, setSugiriendo] = useState(false);
+    const [validacion, setValidacion] = useState(null);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -29,6 +31,8 @@ const NuevaSubasta = () => {
     const {
         register,
         handleSubmit,
+        watch, 
+        setValue,
         formState: { errors, isValid },
     } = useForm({
         mode: "onChange",
@@ -47,6 +51,64 @@ const NuevaSubasta = () => {
             setErrorApi("No se pudieron cargar las categorías");
         });
     }, []);
+
+    const validarVehiculo = () => {
+        const marca = watch ("vehiculo.marca");
+        const modelo = watch ("vehiculo.modelo");
+        const anio = watch ("vehiculo.anio");
+
+        if (!marca || !modelo || !anio){
+            setValidacion("Completá marca, modelo y año para validar el vehículo");
+            return;
+        }
+
+        setValidacion ({ estado : "cargando" });
+
+        api.post("/vehiculos/validar", { marca, modelo, anio: Number(anio) })
+        .then ((response) => {
+            if (response.data.modeloExiste === "undefined") {
+                setValidacion({ estado: "indeterminado", mensaje: response.data.mensaje })
+            } else if (response.data.modeloExiste) {
+                setValidacion({ estado: "ok", mensaje: `Verificado: el ${marca} ${modelo} ${anio} figura en el registro de la base de datos de la NHTSA.` });
+            } else {
+                setValidacion({ estado: "no", mensaje: `No encontramos un ${marca} ${modelo} ${anio} en el registro de la NHTSA. Revisá marca, modelo y año.` });
+            }
+        }).catch ((err) => {
+            setValidacion({ estado : "error", mensaje: err.response?.data?.message || "No se pudo validar el vehículo" });
+        }).finally(() => {
+            setValidacion(false);
+        });
+    };
+
+    const sugerirConIA = () => {
+        const modelo = watch("vehiculo.modelo");
+        const marca = watch("vehiculo.marca");
+        const anio = watch("vehiculo.anio");
+        const categoria = watch("categoria");
+
+        if (!modelo || !marca || !anio || !categoria) {
+            toast.error("Completá marca, modelo, año y categoría para sugerir una descripción");    
+            return;
+        }
+
+        setSugiriendo(true);
+
+        api.post("/ia/sugerencias", { marca, modelo, anio: Number(anio), categoria })
+        .then((response) => {
+            setValue("descripcion", response.data.descripcion, { shouldValidate: true });
+            setValue("precioBase", response.data.precioSugerido, { shouldValidate: true });
+
+            if (response.data.generadoPorIA) {
+                toast.success("Sugerencia generada con IA");
+            } else {
+                toast.info("La IA no estuvo disponible: se usó una descripción genérica y el precio promedio de la categoría");
+            }
+        }).catch ((err) => {
+            toast.error(err.response?.data?.message || "No se pudo generar la sugerencia");
+        }).finally(() => {
+            setSugiriendo(false);
+        });
+    }
 
     const procesarForm = (data) => {
     setErrorApi("");
@@ -130,6 +192,13 @@ const NuevaSubasta = () => {
                     <span className="error">{errors.vehiculo?.anio?.message}</span>
                 </div>
 
+                <button type="button" onClick={validarVehiculo}>Validar vehículo</button>
+                    {validacion && (
+                    <p className={validacion.estado === "no" ? "error" : ""}>
+                        {validacion.estado === "cargando" ? "Consultando NHTSA..." : validacion.mensaje}
+                    </p>
+                )}
+
                 <div className="form-group">
                     <label htmlFor="categoria">Categoría:</label>
                     <select {...register("categoria")} id="categoria" defaultValue="">
@@ -140,6 +209,10 @@ const NuevaSubasta = () => {
                     </select>
                     <span className="error">{errors.categoria?.message}</span>
                 </div>
+
+                <button type="button" onClick={sugerirConIA} disabled={sugiriendo}>
+                    {sugiriendo ? "Generando..." : "Sugerir descripción y precio con IA"}
+                </button>
 
                 <div className="form-group">
                     <label htmlFor="precioBase">Precio base:</label>

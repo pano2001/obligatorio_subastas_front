@@ -42,6 +42,11 @@ const Explorar = () => {
                 <div className="lista-subastas">
                     {publicas.map((subasta) => (
                         <div className="card-subasta" key={subasta._id}>
+                            {subasta.imagenes.length > 0 ? (
+                                <img src={subasta.imagenes[0]} alt={subasta.titulo} width="250" />
+                            ) : (
+                                <div className="sin-imagen">Sin fotos</div>
+                            )}
                             <h3>{subasta.titulo}</h3>
                             <p>{subasta.vehiculo.marca} {subasta.vehiculo.modelo} ({subasta.vehiculo.anio})</p>
                             <p>Precio actual: ${subasta.precioActual}</p>

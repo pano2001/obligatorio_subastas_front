@@ -1,7 +1,17 @@
 import {createSlice} from "@reduxjs/toolkit";
 
+const cargarUsuario = () => {
+    try {
+        return JSON.parse(localStorage.getItem("usuario"));
+    } catch {
+        localStorage.removeItem("usuario");
+        localStorage.removeItem("token");
+        return null;
+    }
+};
+
 const initialState = {
-    usuario: JSON.parse(localStorage.getItem("usuario")),
+    usuario: cargarUsuario(),
     token: localStorage.getItem("token"),
 }
 
