@@ -13,6 +13,8 @@ import NuevaSubasta from './pages/NuevaSubasta'
 import Account from './pages/Account'
 import NotFound from './pages/NotFound'
 import SubastaDetalle from './pages/SubastaDetalle'
+import AdminRoute from './components/AdminRoute'
+import AdminCategorias from './pages/AdminCategorias'
 
 const App = () => {
   return (
@@ -33,6 +35,10 @@ const App = () => {
               <Route path="/subastas" element={<Subastas />} />
               <Route path="/subastas/nueva" element={<NuevaSubasta />} />
               <Route path="/account" element={<Account />} />
+            </Route>
+
+            <Route element={<AdminRoute />}>
+              <Route path="/admin/categorias" element={<AdminCategorias />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

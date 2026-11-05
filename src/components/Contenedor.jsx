@@ -26,6 +26,7 @@ const Contenedor = () => {
               <>
                 <Link to="/subastas">Mis subastas</Link>
                 <Link to="/account">Mi cuenta</Link>
+                {usuario.rol === "admin" && <Link to="/admin/categorias">Categorías</Link>}
                 <span>{usuario.nombre}</span>
                 <span className="badge-plan">{usuario.plan}</span>
                 <button className="logout-btn" onClick={salir} title="Cerrar sesión">Salir</button>

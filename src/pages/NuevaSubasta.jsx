@@ -64,7 +64,7 @@ const NuevaSubasta = () => {
 
         setValidacion ({ estado : "cargando" });
 
-        api.post("/vehiculos/validar", { marca, modelo, anio: Number(anio) })
+        api.get("/vehiculos/validar", { params: { marca, modelo, anio } })
         .then ((response) => {
             if (response.data.modeloExiste === "undefined") {
                 setValidacion({ estado: "indeterminado", mensaje: response.data.mensaje })
