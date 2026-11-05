@@ -1,6 +1,7 @@
 import {Outlet, useNavigate, Link} from "react-router";
 import {useSelector, useDispatch} from "react-redux";
 import {cerrarSesion} from "../features/auth.slice";
+import logo from "../assets/logo.svg";
 
 const Contenedor = () => {
 
@@ -18,10 +19,12 @@ const Contenedor = () => {
     <>
       <header className="main-header">
         <div className="header-content">
-          <Link to="/" className="app-logo">🚗<span>Subastas</span></Link>
+          <Link to="/" className="app-logo">
+            <img src={logo} alt="Pano Select" />
+           </Link>
 
           <nav>
-            <Link to="/">Explorar</Link>
+            <Link to="/#subastas">Explorar</Link>
             {usuario ? (
               <>
                 <Link to="/subastas">Mis subastas</Link>

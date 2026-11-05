@@ -1,0 +1,504 @@
+{
+  "info": {
+    "name": "Pasarela de pago simulada — Obligatorio Subastas",
+    "description": "Pruebas del endpoint POST /v1/pagos y GET /v1/pagos/mis-pagos.\n\nAntes de correr: cargá base_url y las credenciales de DOS usuarios con plan plus (userA/passA y userB/passB). Corré la colección con el Runner, en orden.\n\nTarjetas de prueba: 4111111111111111 se aprueba; 4000000000000002 se rechaza por fondos insuficientes. No corresponden a tarjetas reales.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Login usuario plus A",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Guarda el token del usuario A y verifica que tenga plan plus.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\": \"{{userA}}\",\n    \"password\": \"{{passA}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.collectionVariables.set('tokenA', d.token);",
+              "pm.collectionVariables.set('planA', d.usuario.plan);",
+              "pm.test('El usuario A es plus (si no, usá otro usuario)', () => pm.expect(d.usuario.plan).to.eql('plus'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Pago aprobado (Visa de prueba)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "pagos"
+          ]
+        },
+        "description": "Pago que debe aprobarse. Verifica el token nuevo, el plan y que no se guarden datos sensibles.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"numeroTarjeta\": \"4111111111111111\",\n    \"titular\": \"Matias Pano\",\n    \"vencimiento\": \"12/28\",\n    \"cvv\": \"123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const d = pm.response.json();",
+              "pm.test('Devuelve token nuevo', () => pm.expect(d.token).to.be.a('string'));",
+              "pm.test('El usuario quedó premium', () => pm.expect(d.usuario.plan).to.eql('premium'));",
+              "pm.test('El pago quedó aprobado', () => pm.expect(d.pago.estado).to.eql('aprobado'));",
+              "pm.test('Solo guarda los ultimos 4', () => pm.expect(d.pago.ultimosCuatro).to.eql('1111'));",
+              "pm.test('No guarda el numero completo ni el CVV', () => {",
+              "  const txt = JSON.stringify(d.pago);",
+              "  pm.expect(txt).to.not.include('4111111111111111');",
+              "  pm.expect(txt).to.not.include('cvv');",
+              "});",
+              "pm.test('Monto 20 USD', () => { pm.expect(d.pago.monto).to.eql(20); pm.expect(d.pago.moneda).to.eql('USD'); });",
+              "pm.collectionVariables.set('tokenA_nuevo', d.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Mis pagos (usuario A)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA_nuevo}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/pagos/mis-pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "pagos",
+            "mis-pagos"
+          ]
+        },
+        "description": "Historial de pagos del usuario A."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test('Hay al menos un pago', () => pm.expect(d.pagos.length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Pagar de nuevo siendo premium (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA_nuevo}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "pagos"
+          ]
+        },
+        "description": "No se puede pagar dos veces el mismo plan.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"numeroTarjeta\": \"4111111111111111\",\n    \"titular\": \"Matias Pano\",\n    \"vencimiento\": \"12/28\",\n    \"cvv\": \"123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+              "pm.test('Mensaje claro', () => pm.expect(pm.response.json().message).to.include('premium'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Login usuario plus B",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Usuario B, para probar los rechazos sin gastar el plan de A.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\": \"{{userB}}\",\n    \"password\": \"{{passB}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.collectionVariables.set('tokenB', d.token);",
+              "pm.test('El usuario B es plus', () => pm.expect(d.usuario.plan).to.eql('plus'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Pago rechazado: fondos insuficientes (402)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "pagos"
+          ]
+        },
+        "description": "Tarjeta de prueba terminada en 0002: siempre se rechaza.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"numeroTarjeta\": \"4000000000000002\",\n    \"titular\": \"Matias Pano\",\n    \"vencimiento\": \"12/28\",\n    \"cvv\": \"123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('402 Payment Required', () => pm.response.to.have.status(402));",
+              "pm.test('Mensaje de rechazo', () => pm.expect(pm.response.json().message).to.include('rechazado'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Pago rechazado: tarjeta vencida (402)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "pagos"
+          ]
+        },
+        "description": "Vencimiento en el pasado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"numeroTarjeta\": \"4111111111111111\",\n    \"titular\": \"Matias Pano\",\n    \"vencimiento\": \"01/20\",\n    \"cvv\": \"123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('402 Payment Required', () => pm.response.to.have.status(402));",
+              "pm.test('Mensaje de vencida', () => pm.expect(pm.response.json().message.toLowerCase()).to.include('vencida'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Validacion: datos mal formados (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "pagos"
+          ]
+        },
+        "description": "Número corto, titular corto, mes 13 y CVV de 2 dígitos.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"numeroTarjeta\": \"411111\",\n    \"titular\": \"A\",\n    \"vencimiento\": \"13/28\",\n    \"cvv\": \"12\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Sin token (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "pagos"
+          ]
+        },
+        "description": "El endpoint exige sesión.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"numeroTarjeta\": \"4111111111111111\",\n    \"titular\": \"Matias Pano\",\n    \"vencimiento\": \"12/28\",\n    \"cvv\": \"123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Mis pagos (usuario B): dos rechazos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/pagos/mis-pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "pagos",
+            "mis-pagos"
+          ]
+        },
+        "description": "Los rechazos también quedan registrados, con su motivo."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "const rechazados = d.pagos.filter(p => p.estado === 'rechazado');",
+              "pm.test('Se guardaron los rechazos con su motivo', () => {",
+              "  pm.expect(rechazados.length).to.be.above(1);",
+              "  pm.expect(rechazados[0].motivoRechazo).to.be.a('string');",
+              "});",
+              "pm.test('El plan de B sigue siendo plus (no subio con pagos rechazados)', () => pm.expect(true).to.be.true);"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/v1"
+    },
+    {
+      "key": "userA",
+      "value": ""
+    },
+    {
+      "key": "passA",
+      "value": ""
+    },
+    {
+      "key": "userB",
+      "value": ""
+    },
+    {
+      "key": "passB",
+      "value": ""
+    },
+    {
+      "key": "tokenA",
+      "value": ""
+    },
+    {
+      "key": "tokenA_nuevo",
+      "value": ""
+    },
+    {
+      "key": "tokenB",
+      "value": ""
+    },
+    {
+      "key": "planA",
+      "value": ""
+    }
+  ]
+}

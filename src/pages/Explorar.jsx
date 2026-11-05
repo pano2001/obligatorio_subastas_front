@@ -4,6 +4,10 @@ import { Link } from "react-router";
 import api from "../config/api.config";
 import { guardarPublicas } from "../features/subastas.slice";
 
+import { useRef } from "react"
+import { useGSAP } from "@gsap/react"
+import gsap from "gsap"
+
 const Explorar = () => {
     
     const [loading, setLoading] = useState(true);
@@ -28,6 +32,25 @@ const Explorar = () => {
         });
     }, [dispatch]);
 
+
+    const contenedor = useRef(null);
+
+        useGSAP(() => {
+            if (publicas.length === 0) return;
+
+            gsap.fromTo(".card-subasta",
+                { opacity: 0, y: 40 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.6,
+                    stagger: 0.08,
+                    ease: "power3.out",
+                    clearProps: "transform,opacity"
+                }
+            );
+        }, { scope: contenedor, dependencies: [publicas, loading] });
+
     if (loading) return <div className="container"><p>Cargando subastas...</p></div>
 
     if (error) return <div className="container"><p className="error">{error}</p></div>
@@ -39,7 +62,7 @@ const Explorar = () => {
             {publicas.length === 0 ? (
                 <p>No hay subastas activas en este momento.</p>
             ) : (
-                <div className="lista-subastas">
+                <div className="lista-subastas" ref={contenedor}>
                     {publicas.map((subasta) => (
                         <div className="card-subasta" key={subasta._id}>
                             {subasta.imagenes.length > 0 ? (

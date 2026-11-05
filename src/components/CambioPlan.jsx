@@ -1,42 +1,55 @@
-import { useState } from "react"
-import { useSelector, useDispatch } from "react-redux"
-import { toast } from "sonner"
-import api from "../config/api.config"
-import { guardarSesion } from "../features/auth.slice"
+import { useSelector } from "react-redux"
+import { Link } from "react-router"
+
+const LIMITE_PLAN_PLUS = 4;
+const PRECIO_PREMIUM = 20;
 
 const CambioPlan = () => {
 
-    const [loading, setLoading] = useState(false);
-
-    const dispatch = useDispatch();
     const usuario = useSelector((state) => state.auth.usuario);
+    const subastas = useSelector((state) => state.subastas.subastas);
 
-    const mejorarPlan = () => {
-        setLoading(true);
+    const esPremium = usuario.plan === "premium";
+    const disponibles = LIMITE_PLAN_PLUS - subastas.length;
 
-        api.patch("/usuarios/mejorar-plan")
-            .then((response) => {
-                dispatch(guardarSesion({
-                    usuario: response.data.usuario,
-                    token: response.data.token
-                }));
-                toast.success("Ahora tenés el plan premium");
-            })
-            .catch((err) => {
-                toast.error(err.response?.data?.message || "No se pudo cambiar el plan");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-        }
+    return (
+        <div className="planes">
+            <h2>Planes</h2>
 
-        return (
-        <div className="cambio-plan">
-            <h2>Mejorá tu plan</h2>
-            <p>Con premium podés publicar subastas ilimitadas.</p>
-            <button onClick={mejorarPlan} disabled={loading}>
-                {loading ? "Procesando..." : "Pasar a premium"}
-            </button>
+            <div className="grilla-planes">
+                <div className={`card-plan ${!esPremium ? "card-plan-actual" : ""}`}>
+                    <h3>Plus</h3>
+                    <p className="precio-plan">Gratis</p>
+                    <ul>
+                        <li>Hasta {LIMITE_PLAN_PLUS} subastas publicadas</li>
+                        <li>Hasta 5 fotos por subasta</li>
+                        <li>Sugerencias con IA</li>
+                    </ul>
+                    {!esPremium && (
+                        <p>
+                            {disponibles > 0
+                                ? `Tu plan actual · te quedan ${disponibles} publicaciones`
+                                : "Tu plan actual · llegaste al límite de publicaciones"}
+                        </p>
+                    )}
+                </div>
+
+                <div className={`card-plan ${esPremium ? "card-plan-actual" : ""}`}>
+                    <h3>Premium</h3>
+                    <p className="precio-plan">USD {PRECIO_PREMIUM}</p>
+                    <p>Pago único</p>
+                    <ul>
+                        <li>Subastas ilimitadas</li>
+                        <li>Hasta 5 fotos por subasta</li>
+                        <li>Sugerencias con IA</li>
+                    </ul>
+                    {esPremium ? (
+                        <p>Tu plan actual</p>
+                    ) : (
+                        <Link to="/checkout" className="boton-plan">Pasar a premium</Link>
+                    )}
+                </div>
+            </div>
         </div>
     )
 }
