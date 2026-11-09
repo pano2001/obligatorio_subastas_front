@@ -2596,6 +2596,18 @@ button.boton-pagar:hover:not(:disabled) {
     text-decoration: underline;
 }
 
+.aviso-google {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.aviso-google p {
+    color: var(--texto-suave);
+    font-size: 0.925rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

@@ -120,6 +120,10 @@ const MiCuenta = () => {
                             <span>Miembro desde</span>
                             <strong>{miembroDesde}</strong>
                         </div>
+                        <div className="dato">
+                        <span>Inicio de sesión</span>
+                        <strong>{usuario.proveedor === "google" ? "Con Google" : "Usuario y contraseña"}</strong>
+                    </div>
                     </div>
                 )}
             </div>

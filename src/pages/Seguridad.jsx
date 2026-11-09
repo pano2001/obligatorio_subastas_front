@@ -1,7 +1,7 @@
 import { useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { joiResolver } from "@hookform/resolvers/joi"
-import { useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router"
 import { toast } from "sonner"
 import api from "../config/api.config"
@@ -18,6 +18,9 @@ const Seguridad = () => {
     const formulario = useRef(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const usuario = useSelector((state) => state.auth.usuario);
+
+    const esCuentaGoogle = usuario.proveedor === "google";
 
     const {
         register,
@@ -63,49 +66,75 @@ const Seguridad = () => {
                 <p className="pagina-bajada">Cambiá tu contraseña y administrá tu sesión.</p>
             </header>
 
-            <div className="panel">
-                <div className="panel-cabecera">
-                    <div>
-                        <h2>Cambiar contraseña</h2>
-                        <p>Al menos 6 caracteres, con letras y números.</p>
+            {esCuentaGoogle ? (
+                <div className="panel">
+                    <div className="panel-cabecera">
+                        <div>
+                            <h2>Contraseña</h2>
+                            <p>Tu cuenta inicia sesión con Google.</p>
+                        </div>
+                    </div>
+
+                    <div className="aviso-google">
+                        <p>
+                            No tenés una contraseña de Pano Select: entrás con tu cuenta de Google.
+                            Si querés cambiar tu contraseña o reforzar la seguridad, hacelo desde tu cuenta de Google.
+                        </p>
+                        <a
+                            href="https://myaccount.google.com/security"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-secundario btn-chico"
+                        >
+                            Ir a la seguridad de Google
+                        </a>
                     </div>
                 </div>
-
-                <form ref={formulario} onSubmit={handleSubmit(cambiar)}>
-                    <CampoPassword
-                        id="passwordActual"
-                        etiqueta="Contraseña actual"
-                        autoComplete="current-password"
-                        registro={register("passwordActual")}
-                        error={errors.passwordActual?.message}
-                    />
-
-                    <div className="form-grilla">
-                        <CampoPassword
-                            id="passwordNueva"
-                            etiqueta="Nueva contraseña"
-                            autoComplete="new-password"
-                            registro={register("passwordNueva", { deps: ["passwordActual"] })}
-                            error={errors.passwordNueva?.message}
-                        />
-                        <CampoPassword
-                            id="repetirPassword"
-                            etiqueta="Repetir nueva contraseña"
-                            autoComplete="new-password"
-                            registro={register("repetirPassword", { deps: ["passwordNueva"] })}
-                            error={errors.repetirPassword?.message}
-                        />
+            ) : (
+                <div className="panel">
+                    <div className="panel-cabecera">
+                        <div>
+                            <h2>Cambiar contraseña</h2>
+                            <p>Al menos 6 caracteres, con letras y números.</p>
+                        </div>
                     </div>
 
-                    {errorApi && <p className="error">{errorApi}</p>}
+                    <form ref={formulario} onSubmit={handleSubmit(cambiar)}>
+                        <CampoPassword
+                            id="passwordActual"
+                            etiqueta="Contraseña actual"
+                            autoComplete="current-password"
+                            registro={register("passwordActual")}
+                            error={errors.passwordActual?.message}
+                        />
 
-                    <div className="acciones-fila">
-                        <button type="submit" disabled={!isValid || guardando}>
-                            {guardando ? "Actualizando..." : "Actualizar contraseña"}
-                        </button>
-                    </div>
-                </form>
-            </div>
+                        <div className="form-grilla">
+                            <CampoPassword
+                                id="passwordNueva"
+                                etiqueta="Nueva contraseña"
+                                autoComplete="new-password"
+                                registro={register("passwordNueva", { deps: ["passwordActual"] })}
+                                error={errors.passwordNueva?.message}
+                            />
+                            <CampoPassword
+                                id="repetirPassword"
+                                etiqueta="Repetir nueva contraseña"
+                                autoComplete="new-password"
+                                registro={register("repetirPassword", { deps: ["passwordNueva"] })}
+                                error={errors.repetirPassword?.message}
+                            />
+                        </div>
+
+                        {errorApi && <p className="error">{errorApi}</p>}
+
+                        <div className="acciones-fila">
+                            <button type="submit" disabled={!isValid || guardando}>
+                                {guardando ? "Actualizando..." : "Actualizar contraseña"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             <div className="panel">
                 <div className="panel-cabecera">
