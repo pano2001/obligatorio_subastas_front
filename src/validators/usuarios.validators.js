@@ -5,10 +5,6 @@ export const perfilSchema = Joi.object({
         'string.empty': 'El nombre es obligatorio',
         'string.min': 'El nombre debe tener al menos {#limit} caracteres',
         'string.max': 'El nombre no puede tener más de {#limit} caracteres'
-    }),
-    email: Joi.string().email({ tlds: { allow: false } }).required().messages({
-        'string.empty': 'El email es obligatorio',
-        'string.email': 'El email debe tener un formato válido'
     })
 });
 

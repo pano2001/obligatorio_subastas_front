@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { GoogleLogin } from "@react-oauth/google"
 import { useDispatch } from "react-redux"
 import { useNavigate } from "react-router"
-import { toast } from "sonner"
+import { toast } from "../utils/avisos"
 import api from "../config/api.config"
 import { guardarSesion } from "../features/auth.slice"
 

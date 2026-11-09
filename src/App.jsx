@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router'
 import { Provider } from 'react-redux'
-import { Toaster } from 'sonner'
+import { Toaster } from 'sileo'
 import { store } from './store/store'
 import Contenedor from './components/Contenedor'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -27,7 +27,7 @@ const App = () => {
   return (
     <Provider store={store}>
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <Toaster position="bottom-right" richColors />
+      <Toaster position="bottom-right" theme="light" />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Contenedor />}>

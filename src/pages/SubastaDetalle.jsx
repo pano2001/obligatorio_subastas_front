@@ -2,10 +2,12 @@ import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router"
 import { useForm } from "react-hook-form"
 import { joiResolver } from "@hookform/resolvers/joi"
-import { useSelector } from "react-redux"
-import { toast } from "sonner"
+import { useSelector, useDispatch } from "react-redux"
 import api from "../config/api.config"
+import { toast } from "../utils/avisos"
 import { crearPujaSchema } from "../validators/subastas.validators"
+import { reemplazarSubasta } from "../features/subastas.slice"
+import ModalEditarSubasta from "../components/ModalEditarSubasta"
 
 const SubastaDetalle = () => {
 
@@ -17,8 +19,16 @@ const SubastaDetalle = () => {
     const [error, setError] = useState("");
     const [enviando, setEnviando] = useState(false);
     const [imagenActiva, setImagenActiva] = useState(0);
+    const [editando, setEditando] = useState(false);
 
+    const dispatch = useDispatch();
     const usuario = useSelector((state) => state.auth.usuario);
+
+    const actualizarSubasta = (subastaActualizada) => {
+        setSubasta(subastaActualizada);
+        setImagenActiva(0);
+        dispatch(reemplazarSubasta(subastaActualizada));
+    }
 
     const montoMinimo = subasta ? subasta.precioActual + subasta.incrementoMinimo : 0;
 
@@ -90,7 +100,7 @@ const SubastaDetalle = () => {
             <nav className="miga">
                 <Link to="/">Inicio</Link>
                 <span>›</span>
-                <Link to="/#subastas">Subastas</Link>
+                <Link to="/explorar">Subastas</Link>
                 <span>›</span>
                 <span className="miga-actual">{subasta.titulo}</span>
             </nav>
@@ -180,14 +190,19 @@ const SubastaDetalle = () => {
                         <p className="panel-precio">USD {subasta.precioActual}</p>
                         <p className="panel-nota">Próxima puja desde USD {montoMinimo}</p>
 
-                        {!estaActiva ? (
+                        {esPropia ? (
+                            <div className="panel-duenio">
+                                <p className="panel-aviso">Es tu publicación. Podés cambiar las fotos, el título, la descripción y el incremento mínimo.</p>
+                                <button type="button" className="btn-secundario btn-bloque" onClick={() => setEditando(true)}>
+                                    Editar publicación
+                                </button>
+                            </div>
+                        ) : !estaActiva ? (
                             <p className="panel-aviso">Esta subasta ya no está activa.</p>
                         ) : !usuario ? (
                             <p className="panel-aviso">
                                 <Link to="/login">Iniciá sesión</Link> para participar.
                             </p>
-                        ) : esPropia ? (
-                            <p className="panel-aviso">Es tu subasta. No podés pujar en ella.</p>
                         ) : (
                             <form onSubmit={handleSubmit(pujar)}>
                                 <div className="form-group">
@@ -203,6 +218,14 @@ const SubastaDetalle = () => {
                     </div>
                 </aside>
             </div>
+
+            {editando && (
+                <ModalEditarSubasta
+                    subasta={subasta}
+                    alCerrar={() => setEditando(false)}
+                    alActualizar={actualizarSubasta}
+                />
+            )}
         </div>
     )
 }

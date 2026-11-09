@@ -2608,6 +2608,252 @@ button.boton-pagar:hover:not(:disabled) {
     font-size: 0.925rem;
 }
 
+.form-edicion {
+    max-width: 360px;
+    padding-bottom: 18px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--borde);
+}
+
+/* ---------- Modal de edición ---------- */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.modal-fondo {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(20, 18, 19, 0.55);
+    backdrop-filter: blur(3px);
+}
+
+.modal-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 640px;
+    max-height: calc(100vh - 48px);
+    background-color: var(--superficie);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra-alta);
+    overflow: hidden;
+}
+
+.modal-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid var(--borde);
+}
+
+.modal-cabecera h2 {
+    font-family: var(--display);
+    font-size: 1.3rem;
+    margin: 4px 0 2px;
+}
+
+.modal-cabecera p {
+    color: var(--texto-suave);
+    font-size: 0.9rem;
+}
+
+button.modal-cerrar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--superficie-2);
+    color: var(--texto);
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+button.modal-cerrar:hover {
+    background-color: var(--borde);
+}
+
+.modal-cuerpo {
+    overflow-y: auto;
+    padding: 8px 24px 24px;
+}
+
+.modal-seccion {
+    padding-top: 18px;
+}
+
+.modal-seccion h3 {
+    font-family: var(--display);
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.modal-ayuda {
+    color: var(--texto-suave);
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+}
+
+.modal-pie {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--borde);
+    background-color: var(--fondo);
+}
+
+.campo-pie {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.campo-pie small {
+    color: var(--texto-tenue);
+    font-size: 0.8rem;
+}
+
+/* ---------- Editor de fotos ---------- */
+
+.fotos-editor {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+}
+
+.foto-item,
+.foto-agregar {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radio-chico);
+    overflow: hidden;
+}
+
+.foto-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.foto-item.quitando {
+    opacity: 0.4;
+}
+
+.foto-portada {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background-color: rgba(20, 18, 19, 0.75);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+button.foto-quitar {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(20, 18, 19, 0.75);
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+button.foto-quitar:hover:not(:disabled) {
+    background-color: var(--error);
+}
+
+.foto-cargando {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--superficie-2);
+    color: var(--texto-suave);
+    font-size: 0.85rem;
+    animation: foto-latido 1.2s ease-in-out infinite;
+}
+
+@keyframes foto-latido {
+    50% { opacity: 0.5; }
+}
+
+.foto-agregar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 1.5px dashed var(--borde-fuerte);
+    color: var(--texto-suave);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: border-color var(--transicion), background-color var(--transicion);
+}
+
+.foto-agregar:hover {
+    border-color: var(--acento);
+    background-color: var(--acento-suave);
+}
+
+.foto-agregar input {
+    display: none;
+}
+
+.foto-agregar-icono {
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--acento);
+}
+
+.foto-agregar small {
+    color: var(--texto-tenue);
+    font-size: 0.72rem;
+}
+
+.panel-duenio {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* En celular el modal ocupa toda la pantalla desde abajo */
+@media (max-width: 640px) {
+    .modal {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .modal-panel {
+        max-width: none;
+        max-height: 92vh;
+        border-radius: var(--radio) var(--radio) 0 0;
+    }
+
+    .modal-pie button {
+        flex: 1;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

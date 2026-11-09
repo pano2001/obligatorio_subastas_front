@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form"
 import { joiResolver } from "@hookform/resolvers/joi"
 import { useNavigate } from "react-router"
 import { useSelector, useDispatch } from "react-redux"
-import { toast } from "sonner"
+import { toast } from "../utils/avisos"
+import { armarFormDataImagenes, mensajeErrorSubida } from "../utils/imagenes"
 import api from "../config/api.config"
 import { crearSubastaSchema } from "../validators/subastas.validators"
 import { agregarSubasta } from "../features/subastas.slice"
@@ -111,42 +112,37 @@ const NuevaSubasta = () => {
     }
 
     const procesarForm = (data) => {
-    setErrorApi("");
-    setLoading(true);
+        setErrorApi("");
+        setLoading(true);
 
-    api.post("/subastas", data)
-        .then((response) => {
-            
-            const creada = response.data.subasta;
+        api.post("/subastas", data)
+            .then((response) => {
+                const creada = response.data.subasta;
 
-            if (imagenes.length === 0) {
-                return creada;
-            }
-
-            const formData = new FormData();
-            imagenes.forEach((archivo) => {
-                formData.append("imagenes", archivo);
-            });
-
-            return api.post(`/subastas/${creada._id}/imagenes`, formData)
-                .then((respuestaImagenes) => respuestaImagenes.data.subasta)
-                .catch(() => {
-                    toast.error("La subasta se creó, pero no se pudieron subir las imágenes");
+                if (imagenes.length === 0) {
                     return creada;
-                })
-        })
-        .then((subastaFinal) => {
-            dispatch(agregarSubasta(subastaFinal));
-            toast.success("Subasta creada con éxito");
-            navigate("/subastas");
-        })
-        .catch((error) => {
-            setErrorApi(error.response?.data?.message || "No se pudo crear la subasta");
-        })
-        .finally(() => {
-            setLoading(false);
-        })
-}
+                }
+
+                return armarFormDataImagenes(imagenes)
+                    .then((formData) => api.post(`/subastas/${creada._id}/imagenes`, formData))
+                    .then((respuestaImagenes) => respuestaImagenes.data.subasta)
+                    .catch((err) => {
+                        toast.error("La subasta se creó, pero no se pudieron subir las fotos", mensajeErrorSubida(err));
+                        return creada;
+                    })
+            })
+            .then((subastaFinal) => {
+                dispatch(agregarSubasta(subastaFinal));
+                toast.success("Subasta creada con éxito");
+                navigate("/subastas");
+            })
+            .catch((error) => {
+                setErrorApi(error.response?.data?.message || "No se pudo crear la subasta");
+            })
+            .finally(() => {
+                setLoading(false);
+            })
+    }
 
     if (alcanzoLimite) {
         return (

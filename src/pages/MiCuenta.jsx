@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { joiResolver } from "@hookform/resolvers/joi"
 import { useSelector, useDispatch } from "react-redux"
 import { Link } from "react-router"
-import { toast } from "sonner"
+import { toast } from "../utils/avisos"
 import api from "../config/api.config"
 import { perfilSchema } from "../validators/usuarios.validators"
 import { actualizarUsuario } from "../features/auth.slice"
@@ -18,6 +18,8 @@ const MiCuenta = () => {
     const dispatch = useDispatch();
     const usuario = useSelector((state) => state.auth.usuario);
 
+    const esCuentaGoogle = usuario.proveedor === "google";
+
     const {
         register,
         handleSubmit,
@@ -27,13 +29,12 @@ const MiCuenta = () => {
         mode: "onChange",
         resolver: joiResolver(perfilSchema),
         defaultValues: {
-            nombre: usuario.nombre,
-            email: usuario.email
+            nombre: usuario.nombre
         }
     })
 
     const cancelar = () => {
-        reset({ nombre: usuario.nombre, email: usuario.email });
+        reset({ nombre: usuario.nombre });
         setEditando(false);
     }
 
@@ -44,8 +45,8 @@ const MiCuenta = () => {
             .then((response) => {
                 const actualizado = response.data.usuario;
                 dispatch(actualizarUsuario(actualizado));
-                reset({ nombre: actualizado.nombre, email: actualizado.email });
-                toast.success("Tus datos se actualizaron");
+                reset({ nombre: actualizado.nombre });
+                toast.success("Tu nombre se actualizó");
                 setEditando(false);
             })
             .catch((err) => {
@@ -76,56 +77,52 @@ const MiCuenta = () => {
                     </div>
                     {!editando && (
                         <button type="button" className="btn-secundario btn-chico" onClick={() => setEditando(true)}>
-                            Editar
+                            Editar nombre
                         </button>
                     )}
                 </div>
 
-                {editando ? (
-                    <form onSubmit={handleSubmit(guardar)}>
-                        <div className="form-grilla">
-                            <div className="form-group">
-                                <label htmlFor="nombre">Nombre</label>
-                                <input id="nombre" type="text" {...register("nombre")} />
-                                <span className="error">{errors.nombre?.message}</span>
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="email">Email</label>
-                                <input id="email" type="email" {...register("email")} />
-                                <span className="error">{errors.email?.message}</span>
-                            </div>
+                {editando && (
+                    <form className="form-edicion" onSubmit={handleSubmit(guardar)}>
+                        <div className="form-group">
+                            <label htmlFor="nombre">Nombre</label>
+                            <input id="nombre" type="text" {...register("nombre")} />
+                            <span className="error">{errors.nombre?.message}</span>
                         </div>
+
                         <div className="acciones-fila">
                             <button type="submit" disabled={!isValid || !isDirty || guardando}>
-                                {guardando ? "Guardando..." : "Guardar cambios"}
+                                {guardando ? "Guardando..." : "Guardar"}
                             </button>
                             <button type="button" className="btn-secundario" onClick={cancelar}>Cancelar</button>
                         </div>
                     </form>
-                ) : (
-                    <div className="datos">
+                )}
+
+                <div className="datos">
+                    {!editando && (
                         <div className="dato">
                             <span>Nombre</span>
                             <strong>{usuario.nombre}</strong>
                         </div>
-                        <div className="dato">
-                            <span>Usuario</span>
-                            <strong>@{usuario.username}</strong>
-                        </div>
-                        <div className="dato">
-                            <span>Email</span>
-                            <strong>{usuario.email}</strong>
-                        </div>
-                        <div className="dato">
-                            <span>Miembro desde</span>
-                            <strong>{miembroDesde}</strong>
-                        </div>
-                        <div className="dato">
+                    )}
+                    <div className="dato">
+                        <span>Usuario</span>
+                        <strong>@{usuario.username}</strong>
+                    </div>
+                    <div className="dato">
+                        <span>Email</span>
+                        <strong>{usuario.email}</strong>
+                    </div>
+                    <div className="dato">
                         <span>Inicio de sesión</span>
-                        <strong>{usuario.proveedor === "google" ? "Con Google" : "Usuario y contraseña"}</strong>
+                        <strong>{esCuentaGoogle ? "Con Google" : "Usuario y contraseña"}</strong>
                     </div>
+                    <div className="dato">
+                        <span>Miembro desde</span>
+                        <strong>{miembroDesde}</strong>
                     </div>
-                )}
+                </div>
             </div>
 
             <div className="panel">

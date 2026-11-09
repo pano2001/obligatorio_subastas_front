@@ -1,5 +1,5 @@
 import axios from "axios";
-import { toast } from "sonner";
+import { toast } from "../utils/avisos"
 import { store } from "../store/store";
 import { cerrarSesion } from "../features/auth.slice";
 
