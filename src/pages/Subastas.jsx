@@ -1,99 +1,127 @@
-
-import { useEffect, useState } from 'react'
-import { useSelector ,useDispatch } from 'react-redux'
-import api from '../config/api.config'
-import { guardarSubastas } from "../features/subastas.slice";
+import { useEffect, useRef, useState } from "react"
+import { useSelector, useDispatch } from "react-redux"
 import { Link } from "react-router"
+import { useGSAP } from "@gsap/react"
+import api from "../config/api.config"
+import { guardarSubastas } from "../features/subastas.slice"
+import { entradaEscalonada } from "../animations/config"
 import SubastaCard from "../components/SubastaCard"
+import EsqueletoTarjetas from "../components/EsqueletoTarjetas"
+
+const LIMITE_PLAN_PLUS = 4;
+
+const ESTADOS = [
+    { valor: "", texto: "Todas" },
+    { valor: "activa", texto: "Activas" },
+    { valor: "cerrada", texto: "Cerradas" },
+    { valor: "cancelada", texto: "Canceladas" }
+];
 
 const Subastas = () => {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [categorias, setCategorias] = useState([]);
-    const [filtroCategoria, setFiltroCategoria] = useState("");
     const [filtroEstado, setFiltroEstado] = useState("");
 
     const dispatch = useDispatch();
-
     const usuario = useSelector((state) => state.auth.usuario);
     const subastas = useSelector((state) => state.subastas.subastas);
 
+    const raiz = useRef(null);
+
     useEffect(() => {
-        api.get("/categorias")
+        setLoading(true);
+        setError("");
+
+        api.get("/subastas", { params: { vendedor: usuario._id } })
             .then((response) => {
-                setCategorias(response.data.categorias);
+                dispatch(guardarSubastas(response.data.subastas));
             })
-            .catch(() => {
-                setCategorias([]);
+            .catch((err) => {
+                setError(err.response?.data?.message || "No se pudieron cargar tus subastas");
+            })
+            .finally(() => {
+                setLoading(false);
             });
-    }, []);
+    }, [usuario._id, dispatch]);
 
-    useEffect(() => {
-    setLoading(true);
-    setError("");
+    useGSAP(() => {
+        if (loading) return;
+        entradaEscalonada(raiz.current.querySelectorAll(".grilla .tarjeta"));
+    }, { scope: raiz, dependencies: [loading, filtroEstado] });
 
-    api.get("/subastas", { params: { vendedor: usuario._id } })
-        .then((response) => {
-            dispatch(guardarSubastas(response.data.subastas));
-        })
-        .catch((err) => {
-            setError(err.response?.data?.message || "No se pudieron cargar las subastas");
-        })
-        .finally(() => {
-            setLoading(false);
-        });
-}, [usuario._id, dispatch]);
-    // const eliminar = (subasta) => {
-    //     const confirmado = window.confirm(`¿Estás seguro de que deseas eliminar la subasta "${subasta.titulo}"?`);
-    //     if (!confirmado) return;
+    const visibles = filtroEstado
+        ? subastas.filter((subasta) => subasta.estado === filtroEstado)
+        : subastas;
 
-    //     api.delete(`/subastas/${subasta._id}`)
-    //     .then (() => {
-    //         dispatch (quitarSubasta(subasta._id));
-    //         toast.success("La subasta fue eliminada correctamente");
-    //     })
-    //     .catch((err) => {
-    //         toast.error(err.response?.data?.message || "No se pudo eliminar la subasta");
-    //     });
-    // }
+    const alcanzoLimite = usuario.plan === "plus" && subastas.length >= LIMITE_PLAN_PLUS;
 
-    const subastasFiltradas = subastas.filter((subasta) => {
-    const coincideCategoria = !filtroCategoria || subasta.categoria === filtroCategoria;
-    const coincideEstado = !filtroEstado || subasta.estado === filtroEstado;
-    return coincideCategoria && coincideEstado;
-});
+    const resumen = usuario.plan === "plus"
+        ? `${subastas.length} de ${LIMITE_PLAN_PLUS} Plus`
+        : `${subastas.length} publicaciones ·  Premium`;
 
     return (
-        <div className="container">
-            <h1>Mis subastas</h1>
-            <Link to="/subastas/nueva">Nueva subasta</Link>
+        <div className="container" ref={raiz}>
+            <header className="pagina-cabecera">
+                <div>
+                    <span className="eyebrow">Tu actividad</span>
+                    <h1 className="pagina-titulo">Mis subastas</h1>
+                    <p className="pagina-bajada">{resumen}</p>
+                </div>
 
-            <div className="filtros">
-                <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}>
-                    <option value="">Todas las categorías</option>
-                    {categorias.map((categoria) => (
-                        <option value={categoria._id} key={categoria._id}>{categoria.nombre}</option>
+                {alcanzoLimite ? (
+                    <Link to="/plan" className="btn btn-acento">Pasate a Premium</Link>
+                ) : (
+                    <Link to="/subastas/nueva" className="btn">+ Nueva subasta</Link>
+                )}
+            </header>
+
+            {alcanzoLimite && (
+                <div className="aviso-limite">
+                    <span>Llegaste al límite de {LIMITE_PLAN_PLUS} subastas del plan Plus.</span>
+                    <Link to="/plan">Ver planes</Link>
+                </div>
+            )}
+
+            <div className="barra-herramientas">
+                <div className="segmentos">
+                    {ESTADOS.map((estado) => (
+                        <button
+                            type="button"
+                            key={estado.valor}
+                            className={filtroEstado === estado.valor ? "segmento activo" : "segmento"}
+                            onClick={() => setFiltroEstado(estado.valor)}
+                        >
+                            {estado.texto}
+                        </button>
                     ))}
-                </select>
-
-                <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
-                    <option value="">Todos los estados</option>
-                    <option value="activa">Activa</option>
-                    <option value="cerrada">Cerrada</option>
-                    <option value="cancelada">Cancelada</option>
-                </select>
+                </div>
+                <span className="contador">
+                    {visibles.length} {visibles.length === 1 ? "subasta" : "subastas"}
+                </span>
             </div>
 
             {loading ? (
-                <p>Cargando subastas...</p>
+                <EsqueletoTarjetas cantidad={3} />
             ) : error ? (
-                <p className="error">{error}</p>
-            ) : subastasFiltradas.length === 0 ? (
-                <p>No hay subastas que coincidan con los filtros.</p>
+                <div className="estado-vacio">
+                    <h3>No pudimos cargar tus subastas</h3>
+                    <p>{error}</p>
+                </div>
+            ) : subastas.length === 0 ? (
+                <div className="estado-vacio">
+                    <h3>Todavía no publicaste ninguna subasta</h3>
+                    <p>Publicá tu primer vehículo en pocos minutos.</p>
+                    <Link to="/subastas/nueva" className="btn">Publicar mi primer auto</Link>
+                </div>
+            ) : visibles.length === 0 ? (
+                <div className="estado-vacio">
+                    <h3>No hay subastas en este estado</h3>
+                    <p>Probá con otro filtro.</p>
+                </div>
             ) : (
-                <div className="lista-subastas">
-                    {subastasFiltradas.map((subasta) => (
+                <div className="grilla">
+                    {visibles.map((subasta) => (
                         <SubastaCard subasta={subasta} key={subasta._id} />
                     ))}
                 </div>

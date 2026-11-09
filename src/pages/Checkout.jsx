@@ -1,13 +1,25 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { joiResolver } from "@hookform/resolvers/joi"
 import { useSelector, useDispatch } from "react-redux"
-import { Link, useNavigate } from "react-router"
+import { Link } from "react-router"
+import { useGSAP } from "@gsap/react"
 import api from "../config/api.config"
 import { pagoSchema } from "../validators/pagos.validators"
 import { guardarSesion } from "../features/auth.slice"
+import { gsap, EASE, DURACION, sacudir, movimientoReducido } from "../animations/config"
+import { formatearNumeroTarjeta, formatearVencimiento, formatearCvv, detectarMarca } from "../utils/tarjeta"
+import { formatearUSD } from "../utils/formato"
+import logo from "../assets/logo.svg"
 
 const PRECIO = 20;
+
+const IconoCandado = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="11" width="16" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+);
 
 const Checkout = () => {
 
@@ -15,131 +27,241 @@ const Checkout = () => {
     const [rechazo, setRechazo] = useState("");
     const [comprobante, setComprobante] = useState(null);
 
-    const usuario = useSelector((state) => state.auth.usuario);
+    const caja = useRef(null);
     const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const usuario = useSelector((state) => state.auth.usuario);
 
     const {
         register,
         handleSubmit,
-        formState: { errors, isValid }
+        setValue,
+        watch,
+        formState: { errors, isValid },
     } = useForm({
         mode: "onChange",
-        resolver: joiResolver(pagoSchema),
+        resolver: joiResolver(pagoSchema)
     })
+
+    const marca = detectarMarca(watch("numeroTarjeta") || "");
+    const errorTarjeta = errors.numeroTarjeta?.message || errors.vencimiento?.message || errors.cvv?.message;
+
+    useGSAP(() => {
+        if (!comprobante || movimientoReducido()) return;
+
+        gsap.timeline()
+            .fromTo(".exito-icono",
+                { scale: 0, autoAlpha: 0 },
+                { scale: 1, autoAlpha: 1, duration: 0.5, ease: EASE.rebote }
+            )
+            .fromTo(".exito-icono path",
+                { strokeDashoffset: 30 },
+                { strokeDashoffset: 0, duration: 0.35, ease: EASE.suave },
+                "-=0.15"
+            )
+            .fromTo(".exito-aparecer",
+                { autoAlpha: 0, y: 12 },
+                { autoAlpha: 1, y: 0, duration: DURACION.rapida, stagger: 0.06, ease: EASE.salida },
+                "-=0.1"
+            );
+    }, { scope: caja, dependencies: [comprobante] });
 
     const pagar = (data) => {
         setRechazo("");
         setProcesando(true);
 
-        const datos = {
+        api.post("/pagos", {
             numeroTarjeta: data.numeroTarjeta.replace(/\s/g, ""),
-            titular: data.titular,
+            titular: data.titular.trim(),
             vencimiento: data.vencimiento,
-            cvv: data.cvv,
-        };
-
-        api.post("/pagos", datos)
-        .then((response) => {
-            dispatch(guardarSesion({
-                usuario: response.data.usuario,
-                token: response.data.token
-            }));
-            setComprobante(response.data.pago);
+            cvv: data.cvv
         })
-        .catch ((err) => {
-            setRechazo(err.response?.data?.message || "No se pudo procesar el pago");
-        })
-        .finally(() => {
-            setProcesando(false);
-        })
-    }
-
-  if (usuario.plan === "premium" && !comprobante) {
-        return (
-            <div className="container">
-                <h1>Ya tenés el plan premium</h1>
-                <p>Podés publicar subastas sin límite.</p>
-                <Link to="/subastas">Ir a mis subastas</Link>
-            </div>
-        )
+            .then((response) => {
+                dispatch(guardarSesion({
+                    usuario: response.data.usuario,
+                    token: response.data.token
+                }));
+                setComprobante(response.data.pago);
+            })
+            .catch((error) => {
+                setRechazo(error.response?.data?.message || "No se pudo procesar el pago");
+                sacudir(caja.current);
+            })
+            .finally(() => {
+                setProcesando(false);
+            })
     }
 
     if (comprobante) {
         return (
-            <div className="container">
-                <h1>¡Pago aprobado!</h1>
-                <p>Ya tenés el plan premium. Podés publicar subastas sin límite.</p>
+            <div className="checkout">
+                <div className="checkout-caja checkout-exito" ref={caja}>
+                    <div className="exito-icono">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M5 12.5l4.5 4.5L19 7.5" />
+                        </svg>
+                    </div>
 
-                <div className="comprobante">
-                    <h2>Comprobante</h2>
-                    <p>Número de operación: {comprobante._id}</p>
-                    <p>Concepto: {comprobante.concepto}</p>
-                    <p>Monto: {comprobante.moneda} {comprobante.monto}</p>
-                    <p>Tarjeta: {comprobante.marca} terminada en {comprobante.ultimosCuatro}</p>
-                    <p>Fecha: {new Date(comprobante.createdAt).toLocaleString()}</p>
+                    <h1 className="exito-aparecer">Pago aprobado</h1>
+                    <p className="exito-aparecer">Ya tenés el plan Premium. Podés publicar subastas sin límite.</p>
+
+                    <div className="comprobante-detalle exito-aparecer">
+                        <div className="comprobante-fila">
+                            <span>Operación</span>
+                            <strong>#{comprobante._id.slice(-8).toUpperCase()}</strong>
+                        </div>
+                        <div className="comprobante-fila">
+                            <span>Concepto</span>
+                            <strong>{comprobante.concepto}</strong>
+                        </div>
+                        <div className="comprobante-fila">
+                            <span>Tarjeta</span>
+                            <strong>{comprobante.marca} •••• {comprobante.ultimosCuatro}</strong>
+                        </div>
+                        <div className="comprobante-fila">
+                            <span>Fecha</span>
+                            <strong>{new Date(comprobante.createdAt).toLocaleString("es-UY")}</strong>
+                        </div>
+                        <div className="comprobante-fila total">
+                            <span>Total pagado</span>
+                            <strong>{formatearUSD(comprobante.monto)}</strong>
+                        </div>
+                    </div>
+
+                    <div className="acciones-columna exito-aparecer">
+                        <Link to="/subastas/nueva" className="btn btn-acento btn-grande">Publicar una subasta</Link>
+                        <Link to="/configuracion/plan" className="btn btn-secundario">Ver mi plan</Link>
+                    </div>
                 </div>
+            </div>
+        )
+    }
 
-                <button onClick={() => navigate("/subastas/nueva")}>Publicar una subasta</button>
-                <Link to="/account">Volver a mi cuenta</Link>
+    if (usuario.plan === "premium") {
+        return (
+            <div className="checkout">
+                <div className="checkout-caja checkout-exito">
+                    <h1>Ya tenés Premium</h1>
+                    <p>Tu cuenta ya publica sin límite. No hace falta volver a pagar.</p>
+                    <div className="acciones-columna">
+                        <Link to="/subastas/nueva" className="btn btn-grande">Publicar una subasta</Link>
+                        <Link to="/configuracion/plan" className="btn btn-secundario">Ver mi plan</Link>
+                    </div>
+                </div>
             </div>
         )
     }
 
     return (
-        <div className="container">
-            <h1>Finalizar compra</h1>
+        <div className="checkout">
+            <div className="checkout-caja" ref={caja}>
+                <div className="checkout-cabecera">
+                    <img src={logo} alt="Pano Select" />
+                    <span className="checkout-seguro">
+                        <IconoCandado />
+                        Pago seguro
+                    </span>
+                </div>
 
-            <p className="aviso-simulado">
-                Pago simulado con fines académicos. No ingreses datos reales de tu tarjeta.
-            </p>
+                <div className="checkout-producto">
+                    <div>
+                        <strong>Plan Premium</strong>
+                        <span>Publicaciones ilimitadas · pago único</span>
+                    </div>
+                    <span className="checkout-total">{formatearUSD(PRECIO)}</span>
+                </div>
 
-            <div className="resumen-compra">
-                <h2>Resumen</h2>
-                <p>Plan premium — publicaciones ilimitadas</p>
-                <p>Pago único: USD {PRECIO}</p>
+                <form onSubmit={handleSubmit(pagar)} noValidate>
+                    <label className="checkout-label" htmlFor="numeroTarjeta">Información de la tarjeta</label>
+
+                    <div className="grupo-tarjeta">
+                        <div className="grupo-fila">
+                            <input
+                                id="numeroTarjeta"
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="off"
+                                placeholder="1234 1234 1234 1234"
+                                className="input-numero"
+                                {...register("numeroTarjeta", {
+                                    onChange: (e) => setValue("numeroTarjeta", formatearNumeroTarjeta(e.target.value), { shouldValidate: true })
+                                })}
+                            />
+                            {marca && <span className="marca-tarjeta">{marca}</span>}
+                        </div>
+
+                        <div className="grupo-fila dividida">
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="off"
+                                placeholder="MM / AA"
+                                aria-label="Vencimiento"
+                                {...register("vencimiento", {
+                                    onChange: (e) => setValue("vencimiento", formatearVencimiento(e.target.value), { shouldValidate: true })
+                                })}
+                            />
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="off"
+                                placeholder="CVC"
+                                aria-label="Código de seguridad"
+                                {...register("cvv", {
+                                    onChange: (e) => setValue("cvv", formatearCvv(e.target.value), { shouldValidate: true })
+                                })}
+                            />
+                        </div>
+                    </div>
+                    <span className="error">{errorTarjeta}</span>
+
+                    <div className="form-group">
+                        <label htmlFor="titular">Nombre del titular</label>
+                        <input
+                            id="titular"
+                            type="text"
+                            autoComplete="off"
+                            placeholder="Como figura en la tarjeta"
+                            {...register("titular")}
+                        />
+                        <span className="error">{errors.titular?.message}</span>
+                    </div>
+
+                    {rechazo && (
+                        <div className="checkout-rechazo" role="alert">
+                            <strong>Pago rechazado.</strong> {rechazo}
+                        </div>
+                    )}
+
+                    <button type="submit" className="boton-pagar" disabled={!isValid || procesando}>
+                        {procesando ? (
+                            <>
+                                <span className="spinner"></span>
+                                Procesando...
+                            </>
+                        ) : (
+                            <>
+                                <IconoCandado />
+                                Pagar {formatearUSD(PRECIO)}
+                            </>
+                        )}
+                    </button>
+
+                    <p className="checkout-legal">
+                        Pago simulado con fines académicos. No ingreses datos reales de tu tarjeta.
+                    </p>
+
+                    <details className="checkout-pruebas">
+                        <summary>Tarjetas de prueba</summary>
+                        <ul>
+                            <li><code>4111 1111 1111 1111</code> se aprueba</li>
+                            <li><code>4000 0000 0000 0002</code> se rechaza por fondos insuficientes</li>
+                            <li>Cualquier vencimiento futuro y cualquier CVC de 3 dígitos</li>
+                        </ul>
+                    </details>
+
+                    <Link to="/configuracion/plan" className="checkout-volver">Cancelar y volver</Link>
+                </form>
             </div>
-
-            <div className="tarjetas-prueba">
-                <p>Tarjetas de prueba:</p>
-                <p>4111 1111 1111 1111 — se aprueba</p>
-                <p>4000 0000 0000 0002 — se rechaza por fondos insuficientes</p>
-                <p>Cualquier vencimiento futuro y cualquier CVV de 3 dígitos.</p>
-            </div>
-
-            <form onSubmit={handleSubmit(pagar)}>
-                <div className="form-group">
-                    <label htmlFor="numeroTarjeta">Número de tarjeta:</label>
-                    <input {...register("numeroTarjeta")} type="text" id="numeroTarjeta" placeholder="4111 1111 1111 1111" autoComplete="off" />
-                    <span className="error">{errors.numeroTarjeta?.message}</span>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="titular">Titular:</label>
-                    <input {...register("titular")} type="text" id="titular" placeholder="Como figura en la tarjeta" autoComplete="off" />
-                    <span className="error">{errors.titular?.message}</span>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="vencimiento">Vencimiento:</label>
-                    <input {...register("vencimiento")} type="text" id="vencimiento" placeholder="MM/AA" autoComplete="off" />
-                    <span className="error">{errors.vencimiento?.message}</span>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="cvv">CVV:</label>
-                    <input {...register("cvv")} type="text" id="cvv" placeholder="123" autoComplete="off" />
-                    <span className="error">{errors.cvv?.message}</span>
-                </div>
-
-                {rechazo && <p className="error">{rechazo}</p>}
-
-                <button type="submit" disabled={!isValid || procesando}>
-                    {procesando ? "Procesando pago..." : `Pagar USD ${PRECIO}`}
-                </button>
-
-                <Link to="/account">Cancelar</Link>
-            </form>
         </div>
     )
 }

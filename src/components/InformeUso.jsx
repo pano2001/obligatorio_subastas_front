@@ -1,4 +1,4 @@
-import { useSelector } from "react-redux";
+import { useSelector } from "react-redux"
 
 const LIMITE_PLAN_PLUS = 4;
 
@@ -11,20 +11,24 @@ const InformeUso = () => {
 
     if (usuario.plan === "premium") {
         return (
-            <div className="informe-uso">
-                <h2>Informe de uso</h2>
-                <p>Plan premium</p>
-                <p>Tenés {cantidad} {cantidad === 1 ? "subasta publicada" : "subastas publicadas"}.</p>
+            <div className="uso">
+                <div className="uso-fila">
+                    <span>Publicaciones</span>
+                    <strong>{cantidad}</strong>
+                </div>
+                <p className="uso-nota">Con Premium publicás sin límite.</p>
             </div>
         )
     }
 
-    const porcentaje = Math.round((cantidad / LIMITE_PLAN_PLUS) * 100);
+    const porcentaje = Math.min(Math.round((cantidad / LIMITE_PLAN_PLUS) * 100), 100);
 
     return (
-        <div className="informe-uso">
-            <h2>Informe de uso</h2>
-            <p>Plan plus: usaste {cantidad} de {LIMITE_PLAN_PLUS} subastas ({porcentaje}%).</p>
+        <div className="uso">
+            <div className="uso-fila">
+                <span>Publicaciones usadas</span>
+                <strong>{cantidad} de {LIMITE_PLAN_PLUS} · {porcentaje}%</strong>
+            </div>
             <progress value={cantidad} max={LIMITE_PLAN_PLUS}></progress>
         </div>
     )

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { joiResolver } from "@hookform/resolvers/joi"
 import { Link, useNavigate } from "react-router"
@@ -7,12 +7,17 @@ import { toast } from "sonner"
 import api from "../config/api.config"
 import { loginSchema } from "../validators/auth.validators"
 import { guardarSesion } from "../features/auth.slice"
+import { sacudir } from "../animations/config"
+import AuthLayout from "../components/AuthLayout"
+import BotonGoogle from "../components/BotonGoogle"
+import CampoPassword from "../components/CampoPassword"
 
 const Login = () => {
 
     const [loading, setLoading] = useState(false);
     const [errorApi, setErrorApi] = useState("");
 
+    const formulario = useRef(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
@@ -35,11 +40,12 @@ const Login = () => {
                     usuario: response.data.usuario,
                     token: response.data.token
                 }));
-                toast.success("Bienvenido " + response.data.usuario.nombre);
+                toast.success(`Hola, ${response.data.usuario.nombre}`);
                 navigate("/");
             })
             .catch((error) => {
                 setErrorApi(error.response?.data?.message || "No se pudo conectar con el servidor");
+                sacudir(formulario.current);
             })
             .finally(() => {
                 setLoading(false);
@@ -47,36 +53,44 @@ const Login = () => {
     }
 
     return (
-        <div className="container auth-container">
-            <header>
-                <h1>Login</h1>
-            </header>
+        <AuthLayout titulo="Bienvenido de nuevo" bajada="Ingresá para pujar y gestionar tus subastas.">
+            <div className="auth-aparecer">
+                <BotonGoogle texto="signin_with" />
+            </div>
 
-            <form onSubmit={handleSubmit(procesarForm)}>
-                <div className="form-group">
-                    <label htmlFor="username">Usuario:</label>
-                    <input {...register("username")} type="text" id="username" />
+            <div className="separador auth-aparecer">
+                <span>o con tu usuario</span>
+            </div>
+
+            <form ref={formulario} onSubmit={handleSubmit(procesarForm)} noValidate>
+                <div className="form-group auth-aparecer">
+                    <label htmlFor="username">Usuario</label>
+                    <input id="username" type="text" autoComplete="username" {...register("username")} />
                     <span className="error">{errors.username?.message}</span>
                 </div>
 
-                <div className="form-group">
-                    <label htmlFor="password">Contraseña:</label>
-                    <input {...register("password")} type="password" id="password" />
-                    <span className="error">{errors.password?.message}</span>
+                <div className="auth-aparecer">
+                    <CampoPassword
+                        id="password"
+                        etiqueta="Contraseña"
+                        autoComplete="current-password"
+                        registro={register("password")}
+                        error={errors.password?.message}
+                    />
                 </div>
 
-                {errorApi && <p className="error">{errorApi}</p>}
+                {errorApi && <div className="auth-error" role="alert">{errorApi}</div>}
 
-                <button type="submit" disabled={!isValid || loading}>
+                <button type="submit" className="btn-bloque btn-grande auth-aparecer" disabled={!isValid || loading}>
                     {loading ? "Ingresando..." : "Ingresar"}
                 </button>
             </form>
 
-            <p className="register-link">
-                ¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link>
+            <p className="auth-cambio auth-aparecer">
+                ¿No tenés cuenta? <Link to="/registro">Creá una gratis</Link>
             </p>
-        </div>
+        </AuthLayout>
     )
 }
 
-export default Login;
+export default Login
