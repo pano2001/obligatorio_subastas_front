@@ -2854,6 +2854,18 @@ button.foto-quitar:hover:not(:disabled) {
     }
 }
 
+.foto-nueva {
+    position: absolute;
+    left: 6px;
+    top: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background-color: var(--acento);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

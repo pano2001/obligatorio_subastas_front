@@ -5,13 +5,15 @@ import { joiResolver } from "@hookform/resolvers/joi"
 import { useGSAP } from "@gsap/react"
 import api from "../config/api.config"
 import { toast } from "../utils/avisos"
+import { armarFormDataImagenes, mensajeErrorSubida } from "../utils/imagenes"
 import { editarSubastaSchema } from "../validators/subastas.validators"
 import { gsap, DURACION, EASE, movimientoReducido } from "../animations/config"
-import ImagenesSubasta from "./ImagenesSubasta"
+import EditorFotos from "./EditorFotos"
 
 const ModalEditarSubasta = ({ subasta, alCerrar, alActualizar }) => {
 
-    const [actual, setActual] = useState(subasta);
+    const [existentes, setExistentes] = useState(subasta.imagenes);
+    const [nuevas, setNuevas] = useState([]);
     const [guardando, setGuardando] = useState(false);
 
     const contenedor = useRef(null);
@@ -33,6 +35,10 @@ const ModalEditarSubasta = ({ subasta, alCerrar, alActualizar }) => {
     })
 
     const largoDescripcion = watch("descripcion")?.length || 0;
+
+    const totalFotos = existentes.length + nuevas.length;
+    const fotosCambiaron = nuevas.length > 0 || existentes.length !== subasta.imagenes.length;
+    const hayCambios = isDirty || fotosCambiaron;
 
     const { contextSafe } = useGSAP(() => {
         if (movimientoReducido()) return;
@@ -69,22 +75,55 @@ const ModalEditarSubasta = ({ subasta, alCerrar, alActualizar }) => {
         }
     }, []);
 
-    const cambiarImagenes = (subastaActualizada) => {
-        setActual(subastaActualizada);
-        alActualizar(subastaActualizada);
+    const agregarFotos = (agregadas) => {
+        setNuevas((actuales) => [...actuales, ...agregadas]);
+    }
+
+    const quitarExistente = (url) => {
+        setExistentes((actuales) => actuales.filter((u) => u !== url));
+    }
+
+    const quitarNueva = (indice) => {
+        URL.revokeObjectURL(nuevas[indice].vista);
+        setNuevas((actuales) => actuales.filter((_, i) => i !== indice));
+    }
+
+    const guardarFotos = () => {
+        return armarFormDataImagenes(nuevas.map((nueva) => nueva.archivo))
+            .then((formData) => {
+                formData.append("conservar", JSON.stringify(existentes));
+                return api.put(`/subastas/${subasta._id}/imagenes`, formData);
+            })
+            .then((response) => response.data.subasta);
     }
 
     const guardar = (data) => {
         setGuardando(true);
 
-        api.patch(`/subastas/${subasta._id}`, data)
-            .then((response) => {
-                alActualizar(response.data.subasta);
+        let ultimaVersion = null;
+        let cadena = Promise.resolve();
+
+        if (isDirty) {
+            cadena = cadena
+                .then(() => api.patch(`/subastas/${subasta._id}`, data))
+                .then((response) => { ultimaVersion = response.data.subasta; });
+        }
+
+        if (fotosCambiaron) {
+            cadena = cadena
+                .then(() => guardarFotos())
+                .then((subastaActualizada) => { ultimaVersion = subastaActualizada; });
+        }
+
+        cadena
+            .then(() => {
+                alActualizar(ultimaVersion);
                 toast.success("Publicación actualizada");
                 cerrar();
             })
             .catch((err) => {
-                toast.error(err.response?.data?.message || "No se pudo actualizar la publicación");
+                if (ultimaVersion) alActualizar(ultimaVersion);
+                toast.error("No se pudieron guardar los cambios", mensajeErrorSubida(err));
             })
             .finally(() => {
                 setGuardando(false);
@@ -99,8 +138,8 @@ const ModalEditarSubasta = ({ subasta, alCerrar, alActualizar }) => {
                 <header className="modal-cabecera">
                     <div>
                         <span className="eyebrow">Editar publicación</span>
-                        <h2 id="modal-titulo">{actual.titulo}</h2>
-                        <p>{actual.vehiculo.marca} {actual.vehiculo.modelo} · {actual.vehiculo.anio}</p>
+                        <h2 id="modal-titulo">{subasta.titulo}</h2>
+                        <p>{subasta.vehiculo.marca} {subasta.vehiculo.modelo} · {subasta.vehiculo.anio}</p>
                     </div>
                     <button type="button" className="modal-cerrar" onClick={cerrar} aria-label="Cerrar">×</button>
                 </header>
@@ -108,8 +147,15 @@ const ModalEditarSubasta = ({ subasta, alCerrar, alActualizar }) => {
                 <div className="modal-cuerpo">
                     <section className="modal-seccion">
                         <h3>Fotos</h3>
-                        <p className="modal-ayuda">La primera foto es la portada. Máximo 5.</p>
-                        <ImagenesSubasta subasta={actual} alCambiar={cambiarImagenes} />
+                        <p className="modal-ayuda">La primera foto es la portada. Mínimo 1, máximo 5.</p>
+                        <EditorFotos
+                            existentes={existentes}
+                            nuevas={nuevas}
+                            alAgregar={agregarFotos}
+                            alQuitarExistente={quitarExistente}
+                            alQuitarNueva={quitarNueva}
+                        />
+                        {totalFotos === 0 && <span className="error">La publicación tiene que tener al menos una foto</span>}
                     </section>
 
                     <form id="form-editar" className="modal-seccion" onSubmit={handleSubmit(guardar)}>
@@ -140,7 +186,12 @@ const ModalEditarSubasta = ({ subasta, alCerrar, alActualizar }) => {
 
                 <footer className="modal-pie">
                     <button type="button" className="btn-fantasma" onClick={cerrar}>Cancelar</button>
-                    <button type="submit" form="form-editar" className="btn" disabled={!isValid || !isDirty || guardando}>
+                    <button
+                        type="submit"
+                        form="form-editar"
+                        className="btn"
+                        disabled={!isValid || !hayCambios || totalFotos === 0 || guardando}
+                    >
                         {guardando ? "Guardando..." : "Guardar cambios"}
                     </button>
                 </footer>
