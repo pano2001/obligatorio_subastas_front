@@ -4,7 +4,7 @@ const Privacidad = () => {
             <header className="pagina-encabezado">
                 <span className="eyebrow">Legal</span>
                 <h1 className="pagina-titulo">Política de privacidad</h1>
-                <p className="pagina-bajada">Última actualización: noviembre de 2026</p>
+                <p className="pagina-bajada">2026</p>
             </header>
 
             <section>
@@ -30,7 +30,7 @@ const Privacidad = () => {
 
             <section>
                 <h2>Contacto</h2>
-                <p>Si querés que eliminemos tu cuenta y tus datos, escribinos a claudesantinopano@gmail.com.</p>
+                <p>Si querés que eliminemos tu cuenta y tus datos, escribinos a panoselect@pano.com</p>
             </section>
         </div>
     )

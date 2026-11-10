@@ -94,6 +94,7 @@ const Contenedor = () => {
                     <nav className="navbar-links">
                         <NavLink to="/explorar">Explorar</NavLink>
                         {usuario && <NavLink to="/subastas" end>Mis subastas</NavLink>}
+                        {usuario && <NavLink to="/mis-pujas">Mis pujas</NavLink>}
                     </nav>
 
                     <div className="navbar-acciones">
@@ -112,6 +113,10 @@ const Contenedor = () => {
                                 <div className="menu-panel" ref={panelRef}>
                                     <Link to="/configuracion/cuenta" className="menu-item" onClick={cerrarMenu}>Mi cuenta</Link>
                                     <Link to="/configuracion/plan" className="menu-item" onClick={cerrarMenu}>Plan</Link>
+                                    <Link to="/subastas" className="menu-item" onClick={cerrarMenu}>Mis subastas</Link>
+                                    <Link to="/mis-pujas" className="menu-item" onClick={cerrarMenu}>Mis pujas</Link>
+                                    <Link to="/subastas/nueva" className="menu-item" onClick={cerrarMenu}>Publicar un vehículo</Link>
+                                    <hr className="menu-separador" />
                                     <Link to="/configuracion/seguridad" className="menu-item" onClick={cerrarMenu}>Seguridad</Link>
                                     {usuario.rol === "admin" && (
                                         <Link to="/configuracion/admin/categorias" className="menu-item" onClick={cerrarMenu}>Panel de administración</Link>

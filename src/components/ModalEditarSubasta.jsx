@@ -169,7 +169,12 @@ const ModalEditarSubasta = ({ subasta, alCerrar, alActualizar }) => {
 
                         <div className="form-group">
                             <label htmlFor="editar-descripcion">Descripción</label>
-                            <textarea {...register("descripcion")} id="editar-descripcion" rows="5"></textarea>
+                            <textarea
+                                {...register("descripcion")}
+                                id="descripcion"
+                                rows="10"
+                                placeholder={"Contá el estado del auto...\n\n* Kilómetros: 148.000 km\n* Aire acondicionado\n* Services al día"}
+                            ></textarea>
                             <div className="campo-pie">
                                 <span className="error">{errors.descripcion?.message}</span>
                                 <small>{largoDescripcion}/1000</small>

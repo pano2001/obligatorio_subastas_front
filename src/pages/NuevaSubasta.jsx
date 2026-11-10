@@ -1,38 +1,43 @@
-import { useEffect, useState } from "react"
+import { useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { joiResolver } from "@hookform/resolvers/joi"
-import { useNavigate } from "react-router"
+import { useNavigate, Link } from "react-router"
 import { useSelector, useDispatch } from "react-redux"
+import { useGSAP } from "@gsap/react"
+import api from "../config/api.config"
 import { toast } from "../utils/avisos"
 import { armarFormDataImagenes, mensajeErrorSubida } from "../utils/imagenes"
-import api from "../config/api.config"
+import { formatearUSD } from "../utils/formato"
 import { crearSubastaSchema } from "../validators/subastas.validators"
 import { agregarSubasta } from "../features/subastas.slice"
-
+import { entradaEscalonada } from "../animations/config"
+import EditorFotos from "../components/EditorFotos"
 
 const LIMITE_PLAN_PLUS = 4;
 
 const NuevaSubasta = () => {
 
-    const [categorias, setCategorias] = useState([]);
+    const [fotos, setFotos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errorApi, setErrorApi] = useState("");
-    const [imagenes, setImagenes] = useState([]);
     const [sugiriendo, setSugiriendo] = useState(false);
     const [validacion, setValidacion] = useState(null);
+
+    const contenedor = useRef(null);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
     const usuario = useSelector((state) => state.auth.usuario);
     const subastas = useSelector((state) => state.subastas.subastas);
+    const categorias = useSelector((state) => state.categorias.lista);
 
     const alcanzoLimite = usuario.plan === "plus" && subastas.length >= LIMITE_PLAN_PLUS;
 
     const {
         register,
         handleSubmit,
-        watch, 
+        watch,
         setValue,
         formState: { errors, isValid },
     } = useForm({
@@ -43,101 +48,109 @@ const NuevaSubasta = () => {
         }
     })
 
-    useEffect(() => {
-        api.get("/categorias")
-        .then((response)=> {
-            setCategorias(response.data.categorias);
-        })
-        .catch(() => {
-            setErrorApi("No se pudieron cargar las categorías");
-        });
-    }, []);
+    const titulo = watch("titulo");
+    const precioBase = watch("precioBase");
+    const marca = watch("vehiculo.marca");
+    const modelo = watch("vehiculo.modelo");
+    const anio = watch("vehiculo.anio");
+    const largoDescripcion = watch("descripcion")?.length || 0;
+
+    const tieneFotos = fotos.length > 0;
+
+    useGSAP(() => {
+        entradaEscalonada(contenedor.current.querySelectorAll(".nueva-seccion, .nueva-resumen"));
+    }, { scope: contenedor });
+
+    const agregarFotos = (agregadas) => {
+        setFotos((actuales) => [...actuales, ...agregadas]);
+    }
+
+    const quitarFoto = (indice) => {
+        URL.revokeObjectURL(fotos[indice].vista);
+        setFotos((actuales) => actuales.filter((_, i) => i !== indice));
+    }
 
     const validarVehiculo = () => {
-        const marca = watch ("vehiculo.marca");
-        const modelo = watch ("vehiculo.modelo");
-        const anio = watch ("vehiculo.anio");
-
-        if (!marca || !modelo || !anio){
-            setValidacion("Completá marca, modelo y año para validar el vehículo");
+        if (!marca || !modelo || !anio) {
+            setValidacion({ estado: "error", mensaje: "Completá marca, modelo y año para verificar el vehículo" });
             return;
         }
 
-        setValidacion ({ estado : "cargando" });
+        setValidacion({ estado: "cargando", mensaje: "Consultando la NHTSA..." });
 
         api.get("/vehiculos/validar", { params: { marca, modelo, anio } })
-        .then ((response) => {
-            if (response.data.modeloExiste === "undefined") {
-                setValidacion({ estado: "indeterminado", mensaje: response.data.mensaje })
-            } else if (response.data.modeloExiste) {
-                setValidacion({ estado: "ok", mensaje: `Verificado: el ${marca} ${modelo} ${anio} figura en el registro de la base de datos de la NHTSA.` });
-            } else {
-                setValidacion({ estado: "no", mensaje: `No encontramos un ${marca} ${modelo} ${anio} en el registro de la NHTSA. Revisá marca, modelo y año.` });
-            }
-        }).catch ((err) => {
-            setValidacion({ estado : "error", mensaje: err.response?.data?.message || "No se pudo validar el vehículo" });
-        }).finally(() => {
-            setValidacion(false);
-        });
-    };
+            .then((response) => {
+                if (response.data.modeloExiste === undefined) {
+                    setValidacion({ estado: "indeterminado", mensaje: response.data.mensaje });
+                } else if (response.data.modeloExiste) {
+                    setValidacion({ estado: "ok", mensaje: `El ${marca} ${modelo} ${anio} figura en el registro de la NHTSA` });
+                } else {
+                    setValidacion({ estado: "no", mensaje: `No encontramos un ${marca} ${modelo} ${anio} en la NHTSA. Revisá los datos.` });
+                }
+            })
+            .catch((err) => {
+                setValidacion({ estado: "error", mensaje: err.response?.data?.message || "No se pudo verificar el vehículo" });
+            })
+    }
 
     const sugerirConIA = () => {
-        const modelo = watch("vehiculo.modelo");
-        const marca = watch("vehiculo.marca");
-        const anio = watch("vehiculo.anio");
         const categoria = watch("categoria");
 
-        if (!modelo || !marca || !anio || !categoria) {
-            toast.error("Completá marca, modelo, año y categoría para sugerir una descripción");    
+        if (!marca || !modelo || !anio || !categoria) {
+            toast.error("Faltan datos", "Completá marca, modelo, año y categoría para usar la IA");
             return;
         }
 
         setSugiriendo(true);
 
         api.post("/ia/sugerencias", { marca, modelo, anio: Number(anio), categoria })
-        .then((response) => {
-            setValue("descripcion", response.data.descripcion, { shouldValidate: true });
-            setValue("precioBase", response.data.precioSugerido, { shouldValidate: true });
+            .then((response) => {
+                setValue("descripcion", response.data.descripcion, { shouldValidate: true });
+                setValue("precioBase", response.data.precioSugerido, { shouldValidate: true });
 
-            if (response.data.generadoPorIA) {
-                toast.success("Sugerencia generada con IA");
-            } else {
-                toast.info("La IA no estuvo disponible: se usó una descripción genérica y el precio promedio de la categoría");
-            }
-        }).catch ((err) => {
-            toast.error(err.response?.data?.message || "No se pudo generar la sugerencia");
-        }).finally(() => {
-            setSugiriendo(false);
-        });
+                if (response.data.generadoPorIA) {
+                    toast.success("Sugerencia generada con IA");
+                } else {
+                    toast.info("La IA no estuvo disponible", "Se usó una descripción genérica y el precio promedio de la categoría");
+                }
+            })
+            .catch((err) => {
+                toast.error(err.response?.data?.message || "No se pudo generar la sugerencia");
+            })
+            .finally(() => {
+                setSugiriendo(false);
+            })
     }
 
     const procesarForm = (data) => {
+        if (!tieneFotos) {
+            toast.error("Falta la foto", "La publicación tiene que tener al menos una foto");
+            return;
+        }
+
         setErrorApi("");
         setLoading(true);
 
+        let creada = null;
+
         api.post("/subastas", data)
             .then((response) => {
-                const creada = response.data.subasta;
-
-                if (imagenes.length === 0) {
-                    return creada;
+                creada = response.data.subasta;
+                return armarFormDataImagenes(fotos.map((foto) => foto.archivo));
+            })
+            .then((formData) => api.post(`/subastas/${creada._id}/imagenes`, formData))
+            .then((respuestaImagenes) => {
+                dispatch(agregarSubasta(respuestaImagenes.data.subasta));
+                toast.success("¡Publicada!", "Tu vehículo ya está en subasta");
+                navigate(`/subastas/${creada._id}`);
+            })
+            .catch((err) => {
+                if (creada) {
+                    api.delete(`/subastas/${creada._id}`).catch(() => {});
+                    setErrorApi(`No se pudieron subir las fotos: ${mensajeErrorSubida(err)}. No se publicó nada, probá de nuevo.`);
+                } else {
+                    setErrorApi(err.response?.data?.message || "No se pudo crear la subasta");
                 }
-
-                return armarFormDataImagenes(imagenes)
-                    .then((formData) => api.post(`/subastas/${creada._id}/imagenes`, formData))
-                    .then((respuestaImagenes) => respuestaImagenes.data.subasta)
-                    .catch((err) => {
-                        toast.error("La subasta se creó, pero no se pudieron subir las fotos", mensajeErrorSubida(err));
-                        return creada;
-                    })
-            })
-            .then((subastaFinal) => {
-                dispatch(agregarSubasta(subastaFinal));
-                toast.success("Subasta creada con éxito");
-                navigate("/subastas");
-            })
-            .catch((error) => {
-                setErrorApi(error.response?.data?.message || "No se pudo crear la subasta");
             })
             .finally(() => {
                 setLoading(false);
@@ -147,109 +160,182 @@ const NuevaSubasta = () => {
     if (alcanzoLimite) {
         return (
             <div className="container">
-                <h1>Nueva subasta</h1>
-                <p>Alcanzaste el límite de {LIMITE_PLAN_PLUS} subastas del plan plus. Actualizá a premium para publicar más.</p>
+                <div className="estado-vacio">
+                    <h3>Llegaste al límite de tu plan</h3>
+                    <p>El plan Plus permite hasta {LIMITE_PLAN_PLUS} subastas. Pasate a Premium para publicar sin límite.</p>
+                    <Link to="/configuracion/plan" className="btn btn-acento">Ver planes</Link>
+                </div>
             </div>
         )
     }
 
+    const requisitos = [
+        { texto: "Al menos una foto", ok: tieneFotos },
+        { texto: "Datos del vehículo", ok: !!marca && !!modelo && !!anio && !errors.vehiculo },
+        { texto: "Datos de la publicación", ok: isValid }
+    ];
+
     return (
-        <div className="container">
-            <h1>Nueva subasta</h1>
+        <div className="container nueva" ref={contenedor}>
+            <header className="pagina-encabezado">
+                <span className="eyebrow">Vender</span>
+                <h1 className="pagina-titulo">Publicar un vehículo</h1>
+                <p className="pagina-bajada">Cargá las fotos y los datos. Podés pedirle a la IA una descripción y un precio sugerido.</p>
+            </header>
 
-            <form onSubmit={handleSubmit(procesarForm)}>
-                <div className="form-group">
-                    <label htmlFor="titulo">Título:</label>
-                    <input {...register("titulo")} type="text" id="titulo" />
-                    <span className="error">{errors.titulo?.message}</span>
-                </div>
+            <form className="nueva-cuerpo" onSubmit={handleSubmit(procesarForm)}>
+                <div className="nueva-principal">
 
-                <div className="form-group">
-                    <label htmlFor="descripcion">Descripción:</label>
-                    <textarea {...register("descripcion")} id="descripcion" rows="4"></textarea>
-                    <span className="error">{errors.descripcion?.message}</span>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="marca">Marca:</label>
-                    <input {...register("vehiculo.marca")} type="text" id="marca" />
-                    <span className="error">{errors.vehiculo?.marca?.message}</span>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="modelo">Modelo:</label>
-                    <input {...register("vehiculo.modelo")} type="text" id="modelo" />
-                    <span className="error">{errors.vehiculo?.modelo?.message}</span>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="anio">Año:</label>
-                    <input {...register("vehiculo.anio")} type="number" id="anio" />
-                    <span className="error">{errors.vehiculo?.anio?.message}</span>
-                </div>
-
-                <button type="button" onClick={validarVehiculo}>Validar vehículo</button>
-                    {validacion && (
-                    <p className={validacion.estado === "no" ? "error" : ""}>
-                        {validacion.estado === "cargando" ? "Consultando NHTSA..." : validacion.mensaje}
-                    </p>
-                )}
-
-                <div className="form-group">
-                    <label htmlFor="categoria">Categoría:</label>
-                    <select {...register("categoria")} id="categoria" defaultValue="">
-                        <option value="">Elegí una categoría</option>
-                        {categorias.map((categoria) => (
-                            <option value={categoria._id} key={categoria._id}>{categoria.nombre}</option>
-                        ))}
-                    </select>
-                    <span className="error">{errors.categoria?.message}</span>
-                </div>
-
-                <button type="button" onClick={sugerirConIA} disabled={sugiriendo}>
-                    {sugiriendo ? "Generando..." : "Sugerir descripción y precio con IA"}
-                </button>
-
-                <div className="form-group">
-                    <label htmlFor="precioBase">Precio base:</label>
-                    <input {...register("precioBase")} type="number" id="precioBase" />
-                    <span className="error">{errors.precioBase?.message}</span>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="incrementoMinimo">Incremento mínimo:</label>
-                    <input {...register("incrementoMinimo")} type="number" id="incrementoMinimo" />
-                    <span className="error">{errors.incrementoMinimo?.message}</span>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="fechaFin">Fecha de fin:</label>
-                    <input {...register("fechaFin")} type="datetime-local" id="fechaFin" />
-                    <span className="error">{errors.fechaFin?.message}</span>
-                </div>
-
-                {errorApi && <p className="error">{errorApi}</p>}
-                
-                <div className="form-group">
-                    <label htmlFor="imagenes">Imágenes (hasta 5):</label>
-                    <input
-                        type="file"
-                        id="imagenes"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => setImagenes(Array.from(e.target.files).slice(0, 5))}
-                    />
-                    {imagenes.length > 0 && (
-                        <div className="previews">
-                            {imagenes.map((archivo) => (
-                                <img src={URL.createObjectURL(archivo)} alt={archivo.name} width="80" key={archivo.name} />
-                            ))}
+                    <section className="nueva-seccion">
+                        <div className="nueva-seccion-cabecera">
+                            <span className="nueva-paso">1</span>
+                            <div>
+                                <h3>Fotos</h3>
+                                <p className="modal-ayuda">La primera foto es la portada. Mínimo 1, máximo 5.</p>
+                            </div>
                         </div>
-                    )}
+                        <EditorFotos
+                            existentes={[]}
+                            nuevas={fotos}
+                            alAgregar={agregarFotos}
+                            alQuitarExistente={() => {}}
+                            alQuitarNueva={quitarFoto}
+                        />
+                    </section>
+
+                    <section className="nueva-seccion">
+                        <div className="nueva-seccion-cabecera">
+                            <span className="nueva-paso">2</span>
+                            <div>
+                                <h3>Vehículo</h3>
+                                <p className="modal-ayuda">Lo verificamos contra el registro de la NHTSA.</p>
+                            </div>
+                        </div>
+
+                        <div className="campos-fila tres">
+                            <div className="form-group">
+                                <label htmlFor="marca">Marca</label>
+                                <input {...register("vehiculo.marca")} type="text" id="marca" placeholder="Toyota" />
+                                <span className="error">{errors.vehiculo?.marca?.message}</span>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="modelo">Modelo</label>
+                                <input {...register("vehiculo.modelo")} type="text" id="modelo" placeholder="Corolla" />
+                                <span className="error">{errors.vehiculo?.modelo?.message}</span>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="anio">Año</label>
+                                <input {...register("vehiculo.anio")} type="number" id="anio" placeholder="2020" />
+                                <span className="error">{errors.vehiculo?.anio?.message}</span>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="categoria">Categoría</label>
+                            <select {...register("categoria")} id="categoria" defaultValue="">
+                                <option value="">Elegí una categoría</option>
+                                {categorias.map((categoria) => (
+                                    <option value={categoria._id} key={categoria._id}>{categoria.nombre}</option>
+                                ))}
+                            </select>
+                            <span className="error">{errors.categoria?.message}</span>
+                        </div>
+
+                        <div className="verificacion">
+                            <button type="button" className="btn-secundario btn-chico" onClick={validarVehiculo} disabled={validacion?.estado === "cargando"}>
+                                Verificar vehículo
+                            </button>
+                            {validacion && (
+                                <span className={`verificacion-estado ${validacion.estado}`}>{validacion.mensaje}</span>
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="nueva-seccion">
+                        <div className="nueva-seccion-cabecera">
+                            <span className="nueva-paso">3</span>
+                            <div>
+                                <h3>Publicación</h3>
+                                <p className="modal-ayuda">Lo que van a ver los compradores.</p>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="titulo">Título</label>
+                            <input {...register("titulo")} type="text" id="titulo" placeholder="Toyota Corolla XEi impecable" />
+                            <span className="error">{errors.titulo?.message}</span>
+                        </div>
+
+                        <div className="form-group">
+                            <div className="etiqueta-con-accion">
+                                <label htmlFor="descripcion">Descripción</label>
+                                <button type="button" className="btn-ia" onClick={sugerirConIA} disabled={sugiriendo}>
+                                    {sugiriendo ? "Generando..." : "✦ Sugerir con IA"}
+                                </button>
+                            </div>
+                            <textarea {...register("descripcion")} id="descripcion" rows="5"></textarea>
+                            <div className="campo-pie">
+                                <span className="error">{errors.descripcion?.message}</span>
+                                <small>{largoDescripcion}/1000</small>
+                            </div>
+                        </div>
+
+                        <div className="campos-fila">
+                            <div className="form-group">
+                                <label htmlFor="precioBase">Precio base (USD)</label>
+                                <input {...register("precioBase")} type="number" id="precioBase" />
+                                <span className="error">{errors.precioBase?.message}</span>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="incrementoMinimo">Incremento mínimo (USD)</label>
+                                <input {...register("incrementoMinimo")} type="number" id="incrementoMinimo" />
+                                <span className="error">{errors.incrementoMinimo?.message}</span>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="fechaFin">Finaliza el</label>
+                            <input {...register("fechaFin")} type="datetime-local" id="fechaFin" />
+                            <span className="error">{errors.fechaFin?.message}</span>
+                        </div>
+                    </section>
                 </div>
-                <button type="submit" disabled={!isValid || loading}>
-                    {loading ? "Publicando..." : "Publicar subasta"}
-                </button>
+
+                <aside className="nueva-resumen">
+                    <div className="resumen-caja">
+                        <div className="resumen-foto">
+                            {tieneFotos ? (
+                                <img src={fotos[0].vista} alt="Portada" />
+                            ) : (
+                                <span>Tu portada va acá</span>
+                            )}
+                        </div>
+
+                        <div className="resumen-datos">
+                            <strong className="resumen-titulo">{titulo || "Título de la publicación"}</strong>
+                            <span className="resumen-vehiculo">
+                                {marca || modelo || anio ? `${marca || ""} ${modelo || ""} · ${anio || ""}` : "Marca, modelo y año"}
+                            </span>
+                            <span className="tarjeta-etiqueta">Precio base</span>
+                            <strong className="tarjeta-precio">{precioBase ? formatearUSD(Number(precioBase)) : "USD —"}</strong>
+                        </div>
+
+                        <ul className="requisitos">
+                            {requisitos.map((requisito) => (
+                                <li className={requisito.ok ? "ok" : ""} key={requisito.texto}>
+                                    <span className="requisito-marca">{requisito.ok ? "✓" : ""}</span>
+                                    {requisito.texto}
+                                </li>
+                            ))}
+                        </ul>
+
+                        {errorApi && <p className="error">{errorApi}</p>}
+
+                        <button type="submit" className="btn btn-acento btn-bloque btn-grande" disabled={!isValid || !tieneFotos || loading}>
+                            {loading ? "Publicando..." : "Publicar subasta"}
+                        </button>
+                    </div>
+                </aside>
             </form>
         </div>
     )

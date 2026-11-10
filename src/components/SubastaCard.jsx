@@ -33,7 +33,9 @@ const SubastaCard = ({ subasta }) => {
     return (
         <>
             <TarjetaSubasta subasta={subasta}>
-                <button type="button" className="btn-secundario btn-chico" onClick={() => setEditando(true)}>Editar</button>
+                {subasta.estado === "activa" && (
+                    <button type="button" className="btn-secundario btn-chico" onClick={() => setEditando(true)}>Editar</button>
+                )}
                 <button type="button" className="btn-peligro btn-chico" onClick={eliminar}>Eliminar</button>
             </TarjetaSubasta>
 

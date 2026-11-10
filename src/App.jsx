@@ -22,6 +22,7 @@ import AdminCategorias from './pages/AdminCategorias'
 import NotFound from './pages/NotFound'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import Privacidad from './pages/Privacidad'
+import MisPujas from './pages/MisPujas'
 
 const App = () => {
   return (
@@ -44,8 +45,8 @@ const App = () => {
               <Route path="/subastas" element={<Subastas />} />
               <Route path="/subastas/nueva" element={<NuevaSubasta />} />
               <Route path="/checkout" element={<Checkout />} />
-
-              <Route path="/configuracion" element={<ConfigLayout />}>
+              <Route path="/mis-pujas" element={<MisPujas />} />
+            <Route path="/configuracion" element={<ConfigLayout />}>
                 <Route index element={<Navigate to="cuenta" replace />} />
                 <Route path="cuenta" element={<MiCuenta />} />
                 <Route path="plan" element={<Plan />} />
