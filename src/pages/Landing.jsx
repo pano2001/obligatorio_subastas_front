@@ -16,7 +16,8 @@ const Landing = () => {
     const publicas = useSelector((state) => state.subastas.publicas);
     const raiz = useRef(null);
 
-    const destacadas = publicas.slice(0, 6);
+    // 8 = dos filas completas de 4 en la compu (y 4 filas de 2 en tablet)
+    const destacadas = publicas.slice(0, 8);
 
     useEffect(() => {
         api.get("/subastas", { params: { estado: "activa" } })
@@ -66,43 +67,45 @@ const Landing = () => {
 
     return (
         <div ref={raiz}>
-            <section className="hero">
-                <span className="eyebrow hero-aparecer">Subastas de vehículos · Uruguay</span>
+            <div className="portada">
+                <section className="hero">
+                    <span className="eyebrow hero-aparecer">Subastas de vehículos · Uruguay</span>
 
-                <h1 className="hero-titulo">
-                    <span>Comprar o vender.</span>
-                    <span>Nunca fue tan simple.</span>
-                </h1>
+                    <h1 className="hero-titulo">
+                        <span>Comprar o vender.</span>
+                        <span>Nunca fue tan simple.</span>
+                    </h1>
 
-                <p className="hero-bajada hero-aparecer">
-                    Publicá tu auto o pujá por el que buscás. Datos verificados, fotos reales y un precio que deciden las ofertas.
-                </p>
+                    <p className="hero-bajada hero-aparecer">
+                        Publicá tu auto o pujá por el que buscás. Datos verificados, fotos reales y un precio que deciden las ofertas.
+                    </p>
 
-                <div className="hero-acciones hero-aparecer">
-                    <Link to="/explorar" className="btn btn-grande">Ver subastas activas</Link>
-                    <Link to="/subastas/nueva" className="btn btn-secundario btn-grande">Publicar mi auto</Link>
-                </div>
-
-                <div className="hero-datos hero-aparecer">
-                    <div>
-                        <strong>Publicá en minutos</strong>
-                        <span>Hasta cinco fotos por vehículo</span>
+                    <div className="hero-acciones hero-aparecer">
+                        <Link to="/explorar" className="btn btn-grande">Ver subastas activas</Link>
+                        <Link to="/subastas/nueva" className="btn btn-secundario btn-grande">Publicar mi auto</Link>
                     </div>
-                    <div>
-                        <strong>Datos verificados</strong>
-                        <span>Marca, modelo y año contra el registro NHTSA</span>
-                    </div>
-                    <div>
-                        <strong>Pujas transparentes</strong>
-                        <span>El precio lo define el mercado</span>
-                    </div>
-                </div>
-            </section>
 
-            <div className="franja">
-                <div className="franja-pista">
-                    <span>Subastas activas — Vehículos seleccionados — Pujas transparentes — Publicá gratis — </span>
-                    <span>Subastas activas — Vehículos seleccionados — Pujas transparentes — Publicá gratis — </span>
+                    <div className="hero-datos hero-aparecer">
+                        <div>
+                            <strong>Publicá en minutos</strong>
+                            <span>Hasta cinco fotos por vehículo</span>
+                        </div>
+                        <div>
+                            <strong>Datos verificados</strong>
+                            <span>Marca, modelo y año contra el registro NHTSA</span>
+                        </div>
+                        <div>
+                            <strong>Pujas transparentes</strong>
+                            <span>El precio lo define el mercado</span>
+                        </div>
+                    </div>
+                </section>
+
+                <div className="franja">
+                    <div className="franja-pista">
+                        <span>Subastas activas — Vehículos seleccionados — Pujas transparentes — Publicá gratis — </span>
+                        <span>Subastas activas — Vehículos seleccionados — Pujas transparentes — Publicá gratis — </span>
+                    </div>
                 </div>
             </div>
 
@@ -116,7 +119,7 @@ const Landing = () => {
                 </div>
 
                 {loading ? (
-                    <EsqueletoTarjetas cantidad={3} />
+                    <EsqueletoTarjetas cantidad={4} />
                 ) : destacadas.length === 0 ? (
                     <div className="estado-vacio">
                         <h3>Todavía no hay subastas activas</h3>

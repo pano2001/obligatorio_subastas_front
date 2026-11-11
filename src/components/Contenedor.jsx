@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Outlet, useNavigate, useLocation, Link, NavLink } from "react-router"
+import { Outlet, useNavigate, useLocation, useNavigationType, Link, NavLink } from "react-router"
 import { useSelector, useDispatch } from "react-redux"
 import { useGSAP } from "@gsap/react"
 import api from "../config/api.config"
@@ -15,6 +15,7 @@ const Contenedor = () => {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const tipoNavegacion = useNavigationType();
     const dispatch = useDispatch();
     const usuario = useSelector((state) => state.auth.usuario);
 
@@ -34,6 +35,11 @@ const Contenedor = () => {
             .catch(() => {
             });
     }, [dispatch]);
+
+    useEffect(() => {
+    if (tipoNavegacion === "POP") return;
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }, [location.pathname]);
 
     useGSAP(() => {
         if (!panelRef.current) return;
@@ -142,8 +148,14 @@ const Contenedor = () => {
                             </div>
                         ) : (
                             <>
-                                <Link to="/login" className="boton-texto">Iniciar sesión</Link>
-                                <Link to="/registro" className="btn btn-chico">Registrarse</Link>
+                                <Link to="/login" className="btn btn-chico boton-ingresar">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                                        <polyline points="10 17 15 12 10 7" />
+                                        <line x1="15" y1="12" x2="3" y2="12" />
+                                    </svg>
+                                    Ingresar
+                                </Link>
                                 <button
                                     type="button"
                                     className="boton-menu-movil"
