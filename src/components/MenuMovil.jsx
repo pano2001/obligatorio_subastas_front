@@ -120,7 +120,7 @@ const MenuMovil = ({ usuario, alCerrar, alSalir }) => {
                     ) : (
                         <>
                             <Link to="/login" className="cajon-item cajon-destacado" onClick={() => cerrar()}>Iniciar sesión</Link>
-                            <Link to="/registro" className="cajon-item" onClick={() => cerrar()}>Crear cuenta</Link>
+                            
                             <span className="cajon-titulo cajon-item">Comprar</span>
                             <NavLink to="/explorar" className="cajon-item" onClick={() => cerrar()}>Explorar subastas</NavLink>
                         </>

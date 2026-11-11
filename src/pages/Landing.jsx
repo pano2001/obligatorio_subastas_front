@@ -17,7 +17,10 @@ const Landing = () => {
     const raiz = useRef(null);
 
     // 8 = dos filas completas de 4 en la compu (y 4 filas de 2 en tablet)
-    const destacadas = publicas.slice(0, 8);
+    const destacadas = [...publicas]
+    .filter((subasta) => subasta.estado === "activa")
+    .sort((a, b) => new Date(a.fechaFin) - new Date(b.fechaFin))
+    .slice(0, 8);
 
     useEffect(() => {
         api.get("/subastas", { params: { estado: "activa" } })
