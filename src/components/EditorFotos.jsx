@@ -30,34 +30,40 @@ const EditorFotos = ({ existentes, nuevas, alAgregar, alQuitarExistente, alQuita
         })));
     }
 
-    return (
-        <div className="fotos-editor">
-            {existentes.map((url, indice) => (
-                <div className="foto-item" key={url}>
-                    <img src={url} alt={`Foto ${indice + 1}`} />
-                    {indice === 0 && <span className="foto-portada">Portada</span>}
-                    <button type="button" className="foto-quitar" onClick={() => alQuitarExistente(url)} aria-label="Quitar foto">×</button>
-                </div>
-            ))}
+     return (
+        <>
+            <div className="fotos-editor">
+                {existentes.map((url, indice) => (
+                    <div className="foto-item" key={url}>
+                        <img src={url} alt={`Foto ${indice + 1}`} />
+                        {indice === 0 && <span className="foto-portada">Portada</span>}
+                        <button type="button" className="foto-quitar" onClick={() => alQuitarExistente(url)} aria-label="Quitar foto">×</button>
+                    </div>
+                ))}
 
-            {nuevas.map((nueva, indice) => (
-                <div className="foto-item" key={nueva.vista}>
-                    <img src={nueva.vista} alt={nueva.archivo.name} />
-                    {existentes.length === 0 && indice === 0 && <span className="foto-portada">Portada</span>}
-                    <span className="foto-nueva">Nueva</span>
-                    <button type="button" className="foto-quitar" onClick={() => alQuitarNueva(indice)} aria-label="Quitar foto">×</button>
-                </div>
-            ))}
+                {nuevas.map((nueva, indice) => (
+                    <div className="foto-item" key={nueva.vista}>
+                        <img src={nueva.vista} alt={nueva.archivo.name} />
+                        {existentes.length === 0 && indice === 0 && <span className="foto-portada">Portada</span>}
+                        <span className="foto-nueva">Nueva</span>
+                        <button type="button" className="foto-quitar" onClick={() => alQuitarNueva(indice)} aria-label="Quitar foto">×</button>
+                    </div>
+                ))}
 
-            {lugaresLibres > 0 && (
-                <label className="foto-agregar">
-                    <input type="file" accept="image/*" multiple onChange={elegirArchivos} />
-                    <span className="foto-agregar-icono">+</span>
-                    <span>Agregar fotos</span>
-                    <small>{lugaresLibres} {lugaresLibres === 1 ? "lugar libre" : "lugares libres"}</small>
-                </label>
-            )}
-        </div>
+                {lugaresLibres > 0 && (
+                    <label className="foto-agregar">
+                        <input type="file" accept="image/*" multiple onChange={elegirArchivos} />
+                        <span className="foto-agregar-icono">+</span>
+                        <span>Agregar fotos</span>
+                        <small>{lugaresLibres} {lugaresLibres === 1 ? "lugar libre" : "lugares libres"}</small>
+                    </label>
+                )}
+            </div>
+
+            <p className="fotos-consejo">
+                Consejo: sacá las fotos con el celular en horizontal. Así el auto se ve completo y la publicación queda más prolija.
+            </p>
+        </>
     )
 }
 

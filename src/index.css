@@ -1109,14 +1109,9 @@ button.segmento.activo:hover:not(:disabled) {
     margin: 8px 0 16px;
 }
 
-.galeria {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-}
 
-.galeria img,
+
+
 .previews img {
     border-radius: var(--radio-chico);
     object-fit: cover;
@@ -4339,6 +4334,40 @@ button.cajon-salir:hover:not(:disabled) {
     flex-shrink: 0;
 }
 
+
+/* ---------- Galería: fotos verticales completas con fondo difuminado ---------- */
+
+button.galeria-ampliar {
+    position: relative;
+    background-color: #1c1a1b;
+}
+
+/* La misma foto, agrandada y desenfocada, rellena los costados */
+.galeria-fondo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(28px) brightness(0.8);
+    transform: scale(1.2);
+}
+
+/* La foto vertical se muestra entera, sin recortar */
+.galeria-ampliar.vertical .galeria-foto {
+    position: relative;
+    object-fit: contain;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+}
+
+/* Consejo del editor de fotos */
+.fotos-consejo {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--texto-tenue);
+}
 
 @media (prefers-reduced-motion: reduce) {
     *,

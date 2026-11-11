@@ -7,6 +7,7 @@ const GaleriaFotos = ({ imagenes, titulo }) => {
 
     const [indice, setIndice] = useState(0);
     const [visorAbierto, setVisorAbierto] = useState(false);
+    const [esVertical, setEsVertical] = useState(false);
 
     const contenedor = useRef(null);
     const primeraVez = useRef(true);
@@ -14,11 +15,17 @@ const GaleriaFotos = ({ imagenes, titulo }) => {
     const cantidad = imagenes.length;
     const hayVarias = cantidad > 1;
 
+    // Cuando termina de cargar la foto, vemos si es más alta que ancha
+    const alCargarFoto = (evento) => {
+        const { naturalWidth, naturalHeight } = evento.currentTarget;
+        setEsVertical(naturalHeight > naturalWidth);
+    }
+
     const cambiar = (direccion) => {
         setIndice((actual) => (actual + direccion + cantidad) % cantidad);
     }
 
-    
+    // Flechas del teclado (salvo que estés escribiendo en un campo o con el visor abierto)
     useEffect(() => {
         if (!hayVarias || visorAbierto) return;
 
@@ -33,7 +40,7 @@ const GaleriaFotos = ({ imagenes, titulo }) => {
         return () => window.removeEventListener("keydown", alPresionarTecla);
     }, [hayVarias, visorAbierto, cantidad]);
 
-    
+    // Transición suave cada vez que cambia la foto
     useGSAP(() => {
         if (primeraVez.current || movimientoReducido()) {
             primeraVez.current = false;
@@ -54,11 +61,17 @@ const GaleriaFotos = ({ imagenes, titulo }) => {
             <div className="galeria-principal">
                 <button
                     type="button"
-                    className="galeria-ampliar"
+                    className={esVertical ? "galeria-ampliar vertical" : "galeria-ampliar"}
                     onClick={() => setVisorAbierto(true)}
                     aria-label="Ver foto en pantalla completa"
                 >
-                    <img className="galeria-foto foto-principal" src={imagenes[indice]} alt={`${titulo}, foto ${indice + 1}`} />
+                    {esVertical && <img className="galeria-fondo" src={imagenes[indice]} alt="" aria-hidden="true" />}
+                    <img
+                        className="galeria-foto foto-principal"
+                        src={imagenes[indice]}
+                        alt={`${titulo}, foto ${indice + 1}`}
+                        onLoad={alCargarFoto}
+                    />
                 </button>
 
                 {hayVarias && (
