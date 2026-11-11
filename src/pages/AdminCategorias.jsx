@@ -8,6 +8,7 @@ import api from "../config/api.config"
 import { categoriaSchema } from "../validators/categorias.validators"
 import { guardarCategorias } from "../features/categorias.slice"
 import { entradaEscalonada } from "../animations/config"
+import ModalConfirmar from "../components/ModalConfirmar"
 
 const AdminCategorias = () => {
 
@@ -17,6 +18,8 @@ const AdminCategorias = () => {
     const [guardando, setGuardando] = useState(false);
     const [editandoId, setEditandoId] = useState(null);
     const [busqueda, setBusqueda] = useState("");
+    const [aEliminar, setAEliminar] = useState(null);
+    
 
     const lista = useRef(null);
     const dispatch = useDispatch();
@@ -82,7 +85,7 @@ const AdminCategorias = () => {
                 return cargarCategorias();
             })
             .catch((err) => {
-                toast.error(err.response?.data?.message || "No se pudo guardar la categoría");
+                throw err;
             })
             .finally(() => {
                 setGuardando(false);
@@ -100,19 +103,19 @@ const AdminCategorias = () => {
         reset({ nombre: "", descripcion: "" });
     }
 
-    const eliminar = (categoria) => {
-        const confirmado = window.confirm(`¿Eliminar la categoría "${categoria.nombre}"?`);
-        if (!confirmado) return;
+    const eliminar = () => {
+    const categoria = aEliminar;
 
-        api.delete(`/categorias/${categoria._id}`)
-            .then(() => {
-                toast.success("Categoría eliminada");
-                if (editandoId === categoria._id) cancelarEdicion();
-                return cargarCategorias();
-            })
-            .catch((err) => {
-                toast.error(err.response?.data?.message || "No se pudo eliminar la categoría");
-            })
+    return api.delete(`/categorias/${categoria._id}`)
+        .then(() => {
+            toast.success("Categoría eliminada");
+            if (editandoId === categoria._id) cancelarEdicion();
+            return cargarCategorias();
+        })
+        .catch((err) => {
+            throw err;
+            
+        })
     }
 
     const texto = busqueda.trim().toLowerCase();
@@ -229,7 +232,7 @@ const AdminCategorias = () => {
                                     </div>
                                     <div className="fila-categoria-acciones">
                                         <button type="button" className="btn-fantasma btn-chico" onClick={() => editar(categoria)}>Editar</button>
-                                        <button type="button" className="btn-peligro btn-chico" onClick={() => eliminar(categoria)}>Eliminar</button>
+                                        <button type="button" className="btn-peligro btn-chico" onClick={() => setAEliminar(categoria)}>Eliminar</button>
                                     </div>
                                 </li>
                             ))}
@@ -237,6 +240,15 @@ const AdminCategorias = () => {
                     )}
                 </div>
             </div>
+            {aEliminar && (
+            <ModalConfirmar
+                titulo="¿Eliminar esta categoría?"
+                mensaje={`Se va a borrar "${aEliminar.nombre}". Si tiene subastas asociadas, el sistema no te va a dejar.`}
+                textoConfirmar="Eliminar categoría"
+                alConfirmar={eliminar}
+                alCerrar={() => setAEliminar(null)}
+            />
+        )}
         </>
     )
 }

@@ -129,7 +129,7 @@ const Explorar = () => {
         mm.add("(max-width: 860px)", () => {
             animacionPanel.current = gsap.timeline({ paused: true })
                 .to(".filtros-fondo", { autoAlpha: 1, duration: 0.25 })
-                .fromTo(".filtros-panel", { xPercent: -100 }, { xPercent: 0, duration: 0.4, ease: EASE.salida }, 0);
+                .fromTo(".filtros-panel", { xPercent: -100, x: 0 }, { xPercent: 0, x: 0, duration: 0.4, ease: EASE.salida }, 0);
 
             return () => {
                 animacionPanel.current = null;

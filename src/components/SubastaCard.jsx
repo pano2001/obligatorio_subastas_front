@@ -1,29 +1,41 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useDispatch } from "react-redux"
 import api from "../config/api.config"
 import { toast } from "../utils/avisos"
 import { quitarSubasta, reemplazarSubasta } from "../features/subastas.slice"
 import TarjetaSubasta from "./TarjetaSubasta"
 import ModalEditarSubasta from "./ModalEditarSubasta"
+import ModalConfirmar from "./ModalConfirmar"
 
 const SubastaCard = ({ subasta }) => {
 
     const [editando, setEditando] = useState(false);
+    const [confirmando, setConfirmando] = useState(false);
+
+    const seElimino = useRef(false);
 
     const dispatch = useDispatch();
 
-    const eliminar = () => {
-        const confirmado = window.confirm(`¿Eliminar la subasta "${subasta.titulo}"?`);
-        if (!confirmado) return;
+    // Si el precio actual superó al base, es porque alguien ofertó
+    const tienePujas = subasta.precioActual > subasta.precioBase;
 
-        api.delete(`/subastas/${subasta._id}`)
+    const eliminar = () => {
+        return api.delete(`/subastas/${subasta._id}`)
             .then(() => {
-                dispatch(quitarSubasta(subasta._id));
+                seElimino.current = true;
                 toast.success("Subasta eliminada");
             })
             .catch((err) => {
-                toast.error(err.response?.data?.message || "No se pudo eliminar la subasta");
+                toast.error("No se pudo eliminar", err.response?.data?.message || "Probá de nuevo");
+                throw err;
             })
+    }
+
+    const alCerrarConfirmacion = () => {
+        setConfirmando(false);
+        if (seElimino.current) {
+            dispatch(quitarSubasta(subasta._id));
+        }
     }
 
     const actualizar = (subastaActualizada) => {
@@ -36,7 +48,11 @@ const SubastaCard = ({ subasta }) => {
                 {subasta.estado === "activa" && (
                     <button type="button" className="btn-secundario btn-chico" onClick={() => setEditando(true)}>Editar</button>
                 )}
-                <button type="button" className="btn-peligro btn-chico" onClick={eliminar}>Eliminar</button>
+                {tienePujas ? (
+                    <span className="tarjeta-nota">Tiene ofertas, no se puede eliminar</span>
+                ) : (
+                    <button type="button" className="btn-peligro btn-chico" onClick={() => setConfirmando(true)}>Eliminar</button>
+                )}
             </TarjetaSubasta>
 
             {editando && (
@@ -44,6 +60,16 @@ const SubastaCard = ({ subasta }) => {
                     subasta={subasta}
                     alCerrar={() => setEditando(false)}
                     alActualizar={actualizar}
+                />
+            )}
+
+            {confirmando && (
+                <ModalConfirmar
+                    titulo="¿Eliminar esta subasta?"
+                    mensaje={`Se va a borrar "${subasta.titulo}" con sus fotos. Esta acción no se puede deshacer.`}
+                    textoConfirmar="Eliminar subasta"
+                    alConfirmar={eliminar}
+                    alCerrar={alCerrarConfirmacion}
                 />
             )}
         </>

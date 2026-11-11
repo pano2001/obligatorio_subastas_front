@@ -13,6 +13,7 @@ import { gsap, EASE, pulso, sacudir, movimientoReducido } from "../animations/co
 import ModalEditarSubasta from "../components/ModalEditarSubasta"
 import Descripcion from "../components/Descripcion"
 import CuentaRegresiva from "../components/CuentaRegresiva"
+import GaleriaFotos from "../components/GaleriaFotos"
 
 const SubastaDetalle = () => {
 
@@ -25,7 +26,6 @@ const SubastaDetalle = () => {
     const [enviando, setEnviando] = useState(false);
     const [ofertaEnviada, setOfertaEnviada] = useState(false);
     const [miUltimaPuja, setMiUltimaPuja] = useState("");
-    const [imagenActiva, setImagenActiva] = useState(0);
     const [editando, setEditando] = useState(false);
     const [precioMostrado, setPrecioMostrado] = useState(null);
 
@@ -110,7 +110,6 @@ const SubastaDetalle = () => {
 
     const actualizarSubasta = (subastaActualizada) => {
         setSubasta(subastaActualizada);
-        setImagenActiva(0);
         dispatch(reemplazarSubasta(subastaActualizada));
     }
 
@@ -147,7 +146,6 @@ const SubastaDetalle = () => {
 
     const esPropia = usuario && subasta.vendedor === usuario._id;
     const estaActiva = subasta.estado === "activa";
-    const tieneFotos = subasta.imagenes.length > 0;
 
     const ofertaMasAlta = pujas[0];
     const participe = usuario && pujas.some((puja) => puja.usuario?._id === usuario._id);
@@ -166,58 +164,21 @@ const SubastaDetalle = () => {
             <header className="detalle-encabezado">
                 <h1>{subasta.titulo}</h1>
                 <div className="detalle-meta">
-                    <span><strong>{formatearUSD(subasta.precioActual)}</strong></span>
-                    <span>{pujas.length} {pujas.length === 1 ? "puja" : "pujas"}</span>
                     <span className={`estado estado-${subasta.estado}`}>{subasta.estado}</span>
-                    <span>Finaliza {new Date(subasta.fechaFin).toLocaleString()}</span>
+                    <span>{pujas.length} {pujas.length === 1 ? "puja" : "pujas"}</span>
+                    <span className="meta-punto">·</span>
+                    <span>{subasta.vehiculo.marca} {subasta.vehiculo.modelo}</span>
+                    <span className="meta-punto">·</span>
+                    <span>{subasta.vehiculo.anio}</span>
+                    {subasta.vehiculo.validadoNHTSA && (
+                        <span className="meta-verificado">✓ Verificado NHTSA</span>
+                    )}
                 </div>
             </header>
 
-            <div className="chips">
-                <div className="chip">
-                    <span>Vehículo</span>
-                    <strong>{subasta.vehiculo.marca} {subasta.vehiculo.modelo}</strong>
-                </div>
-                <div className="chip">
-                    <span>Año</span>
-                    <strong>{subasta.vehiculo.anio}</strong>
-                </div>
-                <div className="chip">
-                    <span>Precio base</span>
-                    <strong>{formatearUSD(subasta.precioBase)}</strong>
-                </div>
-                <div className="chip">
-                    <span>Incremento mínimo</span>
-                    <strong>{formatearUSD(subasta.incrementoMinimo)}</strong>
-                </div>
-                <div className="chip">
-                    <span>Verificación</span>
-                    <strong>{subasta.vehiculo.validadoNHTSA ? "NHTSA ✓" : "Sin verificar"}</strong>
-                </div>
-            </div>
-
             <div className="detalle-cuerpo">
                 <div className="detalle-principal">
-                    {tieneFotos ? (
-                        <>
-                            <img className="foto-principal" src={subasta.imagenes[imagenActiva]} alt={subasta.titulo} />
-                            {subasta.imagenes.length > 1 && (
-                                <div className="miniaturas">
-                                    {subasta.imagenes.map((url, indice) => (
-                                        <img
-                                            src={url}
-                                            alt={`Foto ${indice + 1}`}
-                                            key={url}
-                                            className={indice === imagenActiva ? "miniatura activa" : "miniatura"}
-                                            onClick={() => setImagenActiva(indice)}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="sin-imagen foto-principal">Sin fotos</div>
-                    )}
+                    <GaleriaFotos key={subasta.imagenes.join("|")} imagenes={subasta.imagenes} titulo={subasta.titulo} />
 
                     <section className="bloque">
                         <h2>Descripción</h2>
@@ -307,6 +268,17 @@ const SubastaDetalle = () => {
                                 </button>
                             </form>
                         )}
+
+                        <dl className="panel-ficha">
+                            <div>
+                                <dt>Precio base</dt>
+                                <dd>{formatearUSD(subasta.precioBase)}</dd>
+                            </div>
+                            <div>
+                                <dt>Incremento mínimo</dt>
+                                <dd>{formatearUSD(subasta.incrementoMinimo)}</dd>
+                            </div>
+                        </dl>
                     </div>
                 </aside>
             </div>

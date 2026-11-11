@@ -7,6 +7,9 @@ import { gsap, DURACION, EASE, entradaPagina } from "../animations/config"
 import { cerrarSesion } from "../features/auth.slice"
 import { guardarCategorias } from "../features/categorias.slice"
 import logo from "../assets/logo.svg"
+import MenuMovil from "./MenuMovil"
+
+const esMovil = () => window.matchMedia("(max-width: 720px)").matches;
 
 const Contenedor = () => {
 
@@ -16,6 +19,7 @@ const Contenedor = () => {
     const usuario = useSelector((state) => state.auth.usuario);
 
     const [menuAbierto, setMenuAbierto] = useState(false);
+    const [cajonAbierto, setCajonAbierto] = useState(false);
 
     const menuRef = useRef(null);
     const panelRef = useRef(null);
@@ -81,6 +85,15 @@ const Contenedor = () => {
         navigate("/");
     }
 
+    // En el celular el avatar abre el menú lateral; en la compu, el desplegable
+    const abrirMenu = () => {
+        if (esMovil()) {
+            setCajonAbierto(true);
+        } else {
+            setMenuAbierto(!menuAbierto);
+        }
+    }
+
     const inicial = usuario?.nombre?.charAt(0).toUpperCase();
 
     return (
@@ -103,7 +116,7 @@ const Contenedor = () => {
                                 <button
                                     type="button"
                                     className="avatar"
-                                    onClick={() => setMenuAbierto(!menuAbierto)}
+                                    onClick={abrirMenu}
                                     aria-expanded={menuAbierto}
                                     aria-label="Abrir el menú de usuario"
                                 >
@@ -131,6 +144,16 @@ const Contenedor = () => {
                             <>
                                 <Link to="/login" className="boton-texto">Iniciar sesión</Link>
                                 <Link to="/registro" className="btn btn-chico">Registrarse</Link>
+                                <button
+                                    type="button"
+                                    className="boton-menu-movil"
+                                    onClick={() => setCajonAbierto(true)}
+                                    aria-label="Abrir el menú"
+                                >
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </button>
                             </>
                         )}
                     </div>
@@ -140,6 +163,14 @@ const Contenedor = () => {
             <main ref={paginaRef}>
                 <Outlet />
             </main>
+
+            {cajonAbierto && (
+                <MenuMovil
+                    usuario={usuario}
+                    alCerrar={() => setCajonAbierto(false)}
+                    alSalir={salir}
+                />
+            )}
         </>
     )
 }
